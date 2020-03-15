@@ -46,7 +46,7 @@ class Model(nn.Module):
         # Refactor Layer
         self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
         # Classification Layer
-        self.fc = nn.Sequential(ProxyLinear(feature_dim, num_classes))
+        self.fc = nn.Sequential(nn.BatchNorm1d(feature_dim), ProxyLinear(feature_dim, num_classes))
 
     def forward(self, x):
         features = self.features(x)
