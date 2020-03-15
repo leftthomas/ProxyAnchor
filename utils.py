@@ -68,7 +68,7 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
 
 
 class LabelSmoothingCrossEntropyLoss(nn.Module):
-    def __init__(self, smoothing=0.1, temperature=0.05):
+    def __init__(self, smoothing=0.1, temperature=1.0):
         super().__init__()
         self.smoothing = smoothing
         self.temperature = temperature
