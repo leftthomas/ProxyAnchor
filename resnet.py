@@ -1,9 +1,8 @@
 import torch.nn as nn
-from torchvision.models.resnet import conv1x1, conv3x3, BasicBlock, Bottleneck, ResNet
+from torchvision.models.resnet import conv1x1, conv3x3, Bottleneck, ResNet
 from torchvision.models.utils import load_state_dict_from_url
 
 model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
     'seresnet50': 'https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-cadene/se_resnet50-ce0d4300.pth'
 }
@@ -84,10 +83,6 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
                     state_dict[key.replace('last_linear', 'fc')] = state_dict.pop(key)
         model.load_state_dict(state_dict)
     return model
-
-
-def resnet18(pretrained=False, progress=True, **kwargs):
-    return _resnet('resnet18', BasicBlock, [2, 2, 2, 2], pretrained, progress, **kwargs)
 
 
 def resnet50(pretrained=False, progress=True, **kwargs):
