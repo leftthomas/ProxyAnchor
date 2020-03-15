@@ -68,14 +68,17 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
 
 
 class LabelSmoothingCrossEntropyLoss(nn.Module):
-    def __init__(self, smoothing=0.1, temperature=1.0):
+    def __init__(self, smoothing=0.0, temperature=1.0):
         super().__init__()
         self.smoothing = smoothing
         self.temperature = temperature
 
-    def forward(self, x, target, weight):
+    def forward(self, x, target, weight=None):
         log_probs = F.log_softmax(x / self.temperature, dim=-1)
         nll_loss = -log_probs.gather(dim=-1, index=target.unsqueeze(dim=-1)).squeeze(dim=-1)
         smooth_loss = -log_probs.mean(dim=-1)
         loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
-        return (weight * loss).mean()
+        if weight is None:
+            return loss.mean()
+        else:
+            return (weight * loss).mean()
