@@ -93,4 +93,4 @@ if __name__ == '__main__':
         data_frame.to_csv('results/statistics.csv', index_label='epoch')
         if val_acc_1 > best_acc:
             best_acc = val_acc_1
-            torch.save(model.cpu().state_dict(), 'results/model.pth')
+            torch.save(model.state_dict(), 'results/model.pth')
