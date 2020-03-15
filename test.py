@@ -9,7 +9,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test Model')
     parser.add_argument('--query_img_name', default='/home/data/car/uncropped/008055.jpg', type=str,
                         help='query image name')
-    parser.add_argument('--data_base', default='car_uncropped_resnet18_512_data_base.pth',
+    parser.add_argument('--data_base', default='car_uncropped_resnet50_1536_data_base.pth',
                         type=str, help='queried database')
     parser.add_argument('--retrieval_num', default=8, type=int, help='retrieval number')
 
@@ -31,10 +31,10 @@ if __name__ == '__main__':
     gallery_labels = torch.tensor(data_base['{}_labels'.format('test' if data_name != 'isc' else 'gallery')])
     gallery_features = data_base['{}_features'.format('test' if data_name != 'isc' else 'gallery')]
 
-    dist_matrix = torch.cdist(query_feature.unsqueeze(0).unsqueeze(0), gallery_features.unsqueeze(0)).squeeze()
+    sim_matrix = torch.mm(query_feature.unsqueeze(0), gallery_features.t().contiguous()).squeeze()
     if data_name != 'isc':
-        dist_matrix[query_index] = float('inf')
-    idx = dist_matrix.topk(k=retrieval_num, dim=-1, largest=False)[1]
+        sim_matrix[query_index] = 0.0
+    idx = sim_matrix.topk(k=retrieval_num, dim=-1)[1]
 
     result_path = 'results/{}'.format(query_img_name.split('/')[-1].split('.')[0])
     if os.path.exists(result_path):
@@ -47,7 +47,7 @@ if __name__ == '__main__':
         draw = ImageDraw.Draw(retrieval_image)
         retrieval_label = gallery_labels[index.item()]
         retrieval_status = (retrieval_label == query_label).item()
-        retrieval_dist = dist_matrix[index.item()].item()
+        retrieval_dist = sim_matrix[index.item()].item()
         if retrieval_status:
             draw.rectangle((0, 0, 223, 223), outline='green', width=8)
         else:
