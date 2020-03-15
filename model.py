@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from resnet import resnet18, resnet50, seresnet50
+from resnet import resnet50, seresnet50
 
 
 def set_bn_eval(m):
@@ -34,17 +34,14 @@ class Model(nn.Module):
         super().__init__()
 
         # Backbone Network
-        backbones = {'resnet18': (resnet18, 1), 'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
+        backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
         backbone, expansion = backbones[backbone_type]
-        self.layer0 = []
+        self.features = []
         for name, module in backbone(pretrained=True).named_children():
-            if isinstance(module, nn.AdaptiveAvgPool2d) or isinstance(module, nn.Linear):
+            if isinstance(module, (nn.AdaptiveAvgPool2d, nn.Linear)):
                 continue
-            if name not in ['layer1', 'layer2', 'layer3', 'layer4']:
-                self.layer0.append(module)
-            else:
-                self.add_module(name, module)
-        self.layer0 = nn.Sequential(*self.layer0)
+            self.features.append(module)
+        self.features = nn.Sequential(*self.features)
 
         # Refactor Layer
         self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
@@ -52,12 +49,8 @@ class Model(nn.Module):
         self.fc = nn.Sequential(ProxyLinear(feature_dim, num_classes))
 
     def forward(self, x):
-        res0 = self.layer0(x)
-        res1 = self.layer1(res0)
-        res2 = self.layer2(res1)
-        res3 = self.layer3(res2)
-        res4 = self.layer4(res3)
-        global_feature = torch.flatten(F.adaptive_max_pool2d(res4, output_size=(1, 1)), start_dim=1)
+        features = self.features(x)
+        global_feature = torch.flatten(F.adaptive_max_pool2d(features, output_size=(1, 1)), start_dim=1)
         global_feature = F.layer_norm(global_feature, [global_feature.size(-1)])
         feature = F.normalize(self.refactor(global_feature), dim=-1)
         classes = self.fc(feature)
