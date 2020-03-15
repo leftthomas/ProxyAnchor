@@ -1,6 +1,5 @@
 import torch.nn as nn
-from torchvision.models.resnet import Bottleneck, ResNet
-from torchvision.models.utils import load_state_dict_from_url
+from torchvision.models.resnet import Bottleneck, _resnet
 
 model_urls = {
     'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
@@ -56,20 +55,6 @@ class SEBottleneck(Bottleneck):
         out = self.relu(out)
 
         return out
-
-
-def _resnet(arch, block, layers, pretrained, progress, **kwargs):
-    model = ResNet(block, layers, **kwargs)
-    if pretrained:
-        state_dict = load_state_dict_from_url(model_urls[arch], progress=progress, map_location='cpu')
-        if arch == 'seresnet50':
-            for key in list(state_dict.keys()):
-                if 'layer0' in key:
-                    state_dict[key.replace('layer0.', '')] = state_dict.pop(key)
-                if 'last_linear' in key:
-                    state_dict[key.replace('last_linear', 'fc')] = state_dict.pop(key)
-        model.load_state_dict(state_dict)
-    return model
 
 
 def resnet50(pretrained=False, progress=True, **kwargs):
