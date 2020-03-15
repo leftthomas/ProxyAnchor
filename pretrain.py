@@ -33,7 +33,7 @@ def train_val(net, data_loader, train_optimizer):
                                                                                                dynamic_ncols=True)
     with (torch.enable_grad() if is_train else torch.no_grad()):
         for data, target in data_bar:
-            data, target = data.cuda(), target.cuda()
+            data, target = data.cuda(non_blocking=True), target.cuda(non_blocking=True)
             out = net(data)
             loss = loss_criterion(out, target)
 
@@ -64,9 +64,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_path, batch_size, epochs = args.data_path, args.batch_size, args.epochs
     train_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'train'), transform=train_transform)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
     val_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'val'), transform=val_transform)
-    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=16)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
 
     model = seresnet50().cuda()
     flops, params = profile(model, inputs=(torch.randn(1, 3, 224, 224).cuda(),))
