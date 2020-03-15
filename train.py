@@ -27,7 +27,7 @@ def train(net, optim):
     for inputs, labels, weights in data_bar:
         inputs, labels, weights = inputs.cuda(), labels.cuda(), weights.cuda()
         features, classes = net(inputs)
-        loss = loss_criterion(classes, labels, weights)
+        loss = loss_criterion(classes, labels)
         optim.zero_grad()
         loss.backward()
         optim.step()

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from torchvision.models.resnet import conv1x1, conv3x3, Bottleneck, ResNet
+from torchvision.models.resnet import Bottleneck, ResNet
 from torchvision.models.utils import load_state_dict_from_url
 
 model_urls = {
@@ -34,9 +34,6 @@ class SEBottleneck(Bottleneck):
                  norm_layer=None):
         super(SEBottleneck, self).__init__(inplanes, planes, stride, downsample, groups, base_width, dilation,
                                            norm_layer)
-        width = int(planes * (base_width / 64.)) * groups
-        self.conv1 = conv1x1(inplanes, width, stride)
-        self.conv2 = conv3x3(width, width)
         self.se_module = SEModule(planes * self.expansion)
 
     def forward(self, x):
@@ -61,18 +58,8 @@ class SEBottleneck(Bottleneck):
         return out
 
 
-class EResNet(ResNet):
-
-    def __init__(self, block, layers, num_classes=1000, ceil_mode=False):
-        super(EResNet, self).__init__(block, layers, num_classes)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=ceil_mode)
-        # remove down sample for stage3
-        self.inplanes = 128 * block.expansion
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=1)
-
-
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):
-    model = EResNet(block, layers, **kwargs)
+    model = ResNet(block, layers, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch], progress=progress, map_location='cpu')
         if arch == 'seresnet50':
@@ -90,5 +77,4 @@ def resnet50(pretrained=False, progress=True, **kwargs):
 
 
 def seresnet50(pretrained=False, progress=True, **kwargs):
-    kwargs['ceil_mode'] = True
     return _resnet('seresnet50', SEBottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
