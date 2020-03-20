@@ -1,5 +1,6 @@
 import torch.nn as nn
-from torchvision.models.resnet import Bottleneck, _resnet
+from torchvision.models.resnet import Bottleneck, ResNet, conv3x3, conv1x1
+from torchvision.models.utils import load_state_dict_from_url
 
 model_urls = {
     'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
@@ -33,6 +34,9 @@ class SEBottleneck(Bottleneck):
                  norm_layer=None):
         super(SEBottleneck, self).__init__(inplanes, planes, stride, downsample, groups, base_width, dilation,
                                            norm_layer)
+        width = int(planes * (base_width / 64.)) * groups
+        self.conv1 = conv1x1(inplanes, width, stride)
+        self.conv2 = conv3x3(width, width)
         self.se_module = SEModule(planes * self.expansion)
 
     def forward(self, x):
@@ -55,6 +59,30 @@ class SEBottleneck(Bottleneck):
         out = self.relu(out)
 
         return out
+
+
+class EResNet(ResNet):
+
+    def __init__(self, block, layers, num_classes=1000, remove_downsample=False):
+        super(EResNet, self).__init__(block, layers, num_classes)
+        if remove_downsample:
+            # remove down sample for stage4
+            self.inplanes = 256 * block.expansion
+            self.layer4 = self._make_layer(block, 512, layers[3], stride=1)
+
+
+def _resnet(arch, block, layers, pretrained, progress, **kwargs):
+    model = EResNet(block, layers, **kwargs)
+    if pretrained:
+        state_dict = load_state_dict_from_url(model_urls[arch], progress=progress, map_location='cpu')
+        if arch == 'seresnet50':
+            for key in list(state_dict.keys()):
+                if 'layer0' in key:
+                    state_dict[key.replace('layer0.', '')] = state_dict.pop(key)
+                if 'last_linear' in key:
+                    state_dict[key.replace('last_linear', 'fc')] = state_dict.pop(key)
+        model.load_state_dict(state_dict)
+    return model
 
 
 def resnet50(pretrained=False, progress=True, **kwargs):

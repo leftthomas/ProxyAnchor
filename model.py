@@ -37,8 +37,7 @@ class Model(nn.Module):
         backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
         backbone, expansion = backbones[backbone_type]
         self.features = []
-        for name, module in backbone(pretrained=True,
-                                     replace_stride_with_dilation=[False, True, False]).named_children():
+        for name, module in backbone(pretrained=True, remove_downsample=True).named_children():
             if isinstance(module, (nn.AdaptiveAvgPool2d, nn.Linear)):
                 continue
             self.features.append(module)

@@ -83,6 +83,8 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str,
                         choices=['resnet50', 'seresnet50'], help='backbone network type')
     parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
+    parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
+    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='train batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='train epoch number')
@@ -90,9 +92,10 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, crop_type, backbone_type = opt.data_path, opt.data_name, opt.crop_type, opt.backbone_type
-    feature_dim, batch_size, num_epochs = opt.feature_dim, opt.batch_size, opt.num_epochs
+    feature_dim, smoothing, temperature = opt.feature_dim, opt.smoothing, opt.temperature
+    batch_size, num_epochs = opt.batch_size, opt.num_epochs
     recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, feature_dim)
+    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, feature_dim, smoothing, temperature)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -116,8 +119,8 @@ if __name__ == '__main__':
     flops, params = clever_format([flops, params])
     print('# Model Params: {} FLOPs: {}'.format(params, flops))
     optimizer = Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
-    lr_scheduler = StepLR(optimizer, step_size=num_epochs//2, gamma=0.1)
-    loss_criterion = LabelSmoothingCrossEntropyLoss()
+    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
+    loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
