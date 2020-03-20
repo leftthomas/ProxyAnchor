@@ -31,6 +31,7 @@ optional arguments:
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
 --crop_type                   crop data or not, it only works for car or cub dataset [default value is 'uncropped'](choices=['uncropped', 'cropped'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'seresnet50'])
+--remove_downsample           remove downsample of stage 4 or not [default value is False]
 --feature_dim                 feature dim [default value is 1536]
 --smoothing                   smoothing value used in label smoothing [default value is 0.0]
 --temperature                 temperature scale used in temperature softmax [default value is 1.0]

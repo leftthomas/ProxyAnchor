@@ -30,14 +30,14 @@ class ProxyLinear(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_downsample):
         super().__init__()
 
         # Backbone Network
         backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
         backbone, expansion = backbones[backbone_type]
         self.features = []
-        for name, module in backbone(pretrained=True, remove_downsample=True).named_children():
+        for name, module in backbone(pretrained=True, remove_downsample=remove_downsample).named_children():
             if isinstance(module, (nn.AdaptiveAvgPool2d, nn.Linear)):
                 continue
             self.features.append(module)
