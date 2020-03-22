@@ -36,7 +36,7 @@ class SEBottleneck(Bottleneck):
                                            norm_layer)
         width = int(planes * (base_width / 64.)) * groups
         self.conv1 = conv1x1(inplanes, width, stride)
-        self.conv2 = conv3x3(width, width)
+        self.conv2 = conv3x3(width, width, groups=groups, dilation=dilation)
         self.se_module = SEModule(planes * self.expansion)
 
     def forward(self, x):
