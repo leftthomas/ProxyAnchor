@@ -16,6 +16,7 @@ class EResNet(ResNet):
         super(EResNet, self).__init__(block, layers, cardinality=cardinality, base_width=base_width,
                                       norm_layer=norm_layer, global_pool=global_pool, block_args=block_args)
         if remove_downsample:
+            block_args = block_args or dict()
             # remove downsample for stage4
             self.inplanes = 256 * block.expansion
             self.layer4 = self._make_layer(block, 512, layers[3], stride=1, norm_layer=norm_layer, **block_args)
