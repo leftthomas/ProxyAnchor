@@ -1,5 +1,5 @@
-# SPPResNet
-A PyTorch implementation of SPPResNet based on the paper [Spatial Pyramid Pooling Residual Network]().
+# MBNet
+A PyTorch implementation of MBNet based on the paper [Multiple Branches  Network]().
 
 ![Network Architecture](results/structure.png)
 
