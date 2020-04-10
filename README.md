@@ -66,15 +66,15 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
   <tbody>
     <tr>
       <td align="center">ResNet50</td>
-      <td align="center">27.91M | 4.12G</td>
-      <td align="center">27.91M | 4.12G</td>
+      <td align="center">26.81M | 4.41G</td>
+      <td align="center">26.81M | 4.41G</td>
       <td align="center">50.88M | 4.12G</td>
       <td align="center">35.89M | 4.12G</td>
     </tr>
     <tr>
       <td align="center">SEResNet50</td>
-      <td align="center">27.91M | 4.12G</td>
-      <td align="center">27.91M | 4.12G</td>
+      <td align="center">29.34M | 4.41G</td>
+      <td align="center">29.34M | 4.41G</td>
       <td align="center">50.88M | 4.12G</td>
       <td align="center">35.89M | 4.12G</td>
     </tr>

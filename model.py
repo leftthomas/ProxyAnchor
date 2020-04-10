@@ -51,7 +51,8 @@ class Model(nn.Module):
     def forward(self, x):
         features = self.features(x)
         global_feature = F.adaptive_max_pool2d(features, output_size=(1, 1))
+        global_feature = self.refactor(global_feature)
         global_feature = F.layer_norm(global_feature, global_feature.size()[1:])
-        feature = F.normalize(torch.flatten(self.refactor(global_feature), start_dim=1), dim=-1)
+        feature = F.normalize(torch.flatten(global_feature, start_dim=1), dim=-1)
         classes = self.fc(feature)
         return feature, classes
