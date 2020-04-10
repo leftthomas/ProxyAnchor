@@ -1,5 +1,5 @@
 # MBNet
-A PyTorch implementation of MBNet based on the paper [Multiple Branches  Network]().
+A PyTorch implementation of MBNet based on the paper [Multiple Branches Network]().
 
 ![Network Architecture](results/structure.png)
 
@@ -12,10 +12,6 @@ conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 - thop
 ```
 pip install thop
-```
-- timm
-```
-pip install timm
 ```
 
 ## Datasets
@@ -49,7 +45,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_uncropped_resnet50_1536_data_base.pth']
+--data_base                   queried database [default value is 'car_uncropped_resnet50_False_1536_0.0_1.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

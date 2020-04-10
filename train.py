@@ -24,8 +24,8 @@ def train(net, optim):
     # fix bn on backbone network
     net.apply(set_bn_eval)
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
-    for inputs, labels, weights in data_bar:
-        inputs, labels, weights = inputs.cuda(), labels.cuda(), weights.cuda()
+    for inputs, labels in data_bar:
+        inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
         loss = loss_criterion(classes, labels)
         optim.zero_grad()
@@ -47,8 +47,8 @@ def test(net, recall_ids):
         # obtain feature vectors for all data
         for key in eval_dict.keys():
             eval_dict[key]['features'] = []
-            for inputs, labels, weights in tqdm(eval_dict[key]['data_loader'], desc='processing {} data'.format(key),
-                                                dynamic_ncols=True):
+            for inputs, labels in tqdm(eval_dict[key]['data_loader'], desc='processing {} data'.format(key),
+                                       dynamic_ncols=True):
                 features, classes = net(inputs.cuda())
                 eval_dict[key]['features'].append(features)
             eval_dict[key]['features'] = torch.cat(eval_dict[key]['features'], dim=0)

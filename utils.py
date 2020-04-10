@@ -20,25 +20,16 @@ class ImageReader(Dataset):
                                                  transforms.RandomHorizontalFlip(), transforms.ToTensor(), normalize])
         else:
             self.transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), normalize])
-        self.images, self.labels, self.weights = [], [], {}
+        self.images, self.labels = [], []
         for label, image_list in data_dict.items():
             self.images += image_list
             self.labels += [self.class_to_idx[label]] * len(image_list)
-            self.weights[self.class_to_idx[label]] = len(image_list)
-        # class-wise weight for overcome dataset imbalance
-        sum_weight = 0.0
-        for key, value in self.weights.items():
-            self.weights[key] = len(self.labels) / value
-            sum_weight += self.weights[key]
-        for key, value in self.weights.items():
-            self.weights[key] = value / sum_weight * len(self.class_to_idx)
 
     def __getitem__(self, index):
         path, target = self.images[index], self.labels[index]
-        weight = self.weights[target]
         img = Image.open(path).convert('RGB')
         img = self.transform(img)
-        return img, target, weight
+        return img, target
 
     def __len__(self):
         return len(self.images)
@@ -73,12 +64,9 @@ class LabelSmoothingCrossEntropyLoss(nn.Module):
         self.smoothing = smoothing
         self.temperature = temperature
 
-    def forward(self, x, target, weight=None):
+    def forward(self, x, target):
         log_probs = F.log_softmax(x / self.temperature, dim=-1)
         nll_loss = -log_probs.gather(dim=-1, index=target.unsqueeze(dim=-1)).squeeze(dim=-1)
         smooth_loss = -log_probs.mean(dim=-1)
         loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
-        if weight is None:
-            return loss.mean()
-        else:
-            return (weight * loss).mean()
+        return loss.mean()
