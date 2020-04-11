@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -9,6 +11,22 @@ def set_bn_eval(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm2d') != -1:
         m.eval()
+
+
+class ProxyLinear(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ProxyLinear, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+
+    def forward(self, x):
+        output = x.matmul(F.normalize(self.weight, dim=-1).t())
+        return output
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}'.format(self.in_features, self.out_features)
 
 
 class Model(nn.Module):
@@ -28,7 +46,7 @@ class Model(nn.Module):
         # Refactor Layer
         self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)
         # Classification Layer
-        self.fc = nn.Sequential(nn.BatchNorm1d(feature_dim), nn.Linear(feature_dim, num_classes, bias=False))
+        self.fc = nn.Sequential(nn.BatchNorm1d(feature_dim), ProxyLinear(feature_dim, num_classes))
 
     def forward(self, x):
         features = self.features(x)
