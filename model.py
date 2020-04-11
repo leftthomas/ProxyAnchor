@@ -44,15 +44,14 @@ class Model(nn.Module):
         self.features = nn.Sequential(*self.features)
 
         # Refactor Layer
-        self.refactor = nn.Conv2d(512 * expansion, feature_dim, 1, bias=False)
+        self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)
         # Classification Layer
         self.fc = nn.Sequential(nn.BatchNorm1d(feature_dim), ProxyLinear(feature_dim, num_classes))
 
     def forward(self, x):
         features = self.features(x)
-        global_feature = F.adaptive_max_pool2d(features, output_size=(1, 1))
-        global_feature = self.refactor(global_feature)
-        global_feature = F.layer_norm(global_feature, global_feature.size()[1:])
-        feature = F.normalize(torch.flatten(global_feature, start_dim=1), dim=-1)
+        global_feature = torch.flatten(F.adaptive_max_pool2d(features, output_size=(1, 1)), start_dim=2)
+        global_feature = torch.flatten(self.refactor(global_feature), start_dim=1)
+        feature = F.normalize(F.layer_norm(global_feature, global_feature.size()[1:]), dim=-1)
         classes = self.fc(feature)
         return feature, classes
