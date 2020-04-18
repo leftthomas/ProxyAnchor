@@ -22,7 +22,7 @@ torch.backends.cudnn.benchmark = False
 def train(net, optim):
     net.train()
     # fix bn on backbone network
-    net.apply(set_bn_eval)
+    net.features.apply(set_bn_eval)
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train', crop_type)
-    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
+    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8, drop_last=True)
     test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test', crop_type)
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
     eval_dict = {'test': {'data_loader': test_data_loader}}
