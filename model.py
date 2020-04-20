@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -17,7 +19,7 @@ class ProxyLinear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
-        nn.init.normal_(self.weight)
+        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
 
     def forward(self, x):
         output = x.matmul(F.normalize(self.weight, dim=-1).t())
@@ -45,7 +47,7 @@ class GatePool(nn.Module):
         avg_value = F.adaptive_avg_pool2d(x, output_size=(1, 1))
 
         x = self.relu(self.bn(self.conv1(x)))
-        gate = self.relu(torch.tanh(self.conv2(self.avg_pool(x))))
+        gate = torch.tanh(self.conv2(self.avg_pool(x)))
         output = torch.where(gate > 0, max_value, avg_value)
         return output
 
