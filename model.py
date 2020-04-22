@@ -37,18 +37,19 @@ class GatePool(nn.Module):
         self.bn = nn.BatchNorm2d(reduction_channels)
         self.relu = nn.ReLU(inplace=True)
         self.avg_pool = nn.AdaptiveAvgPool2d(output_size=1)
-        self.conv2 = nn.Conv2d(reduction_channels, channels, kernel_size=1, padding=0, bias=True)
+        self.conv_2 = nn.Conv2d(reduction_channels, channels, kernel_size=1, padding=0, bias=True)
+
         nn.init.kaiming_normal_(self.conv1.weight)
-        nn.init.kaiming_normal_(self.conv2.weight)
-        nn.init.constant_(self.conv2.bias, 1.5)
+        nn.init.kaiming_normal_(self.conv_2.weight)
+        nn.init.constant_(self.conv_2.bias, 1.5)
 
     def forward(self, x):
         max_value = F.adaptive_max_pool2d(x, output_size=(1, 1))
         avg_value = F.adaptive_avg_pool2d(x, output_size=(1, 1))
 
         x = self.relu(self.bn(self.conv1(x)))
-        gate = torch.tanh(self.conv2(self.avg_pool(x)))
-        output = torch.where(gate > 0, max_value, avg_value)
+        gate = torch.sigmoid(self.conv_2(self.avg_pool(x)))
+        output = gate * max_value + (1.0 - gate) * avg_value
         return output
 
 
