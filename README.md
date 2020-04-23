@@ -33,6 +33,7 @@ optional arguments:
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'seresnet50'])
 --remove_downsample           remove downsample of stage 4 or not [default value is False]
 --feature_dim                 feature dim [default value is 1536]
+--pool_type                   pool type used in model [default value is 'mix'](choices=['avg', 'max', 'mix'])
 --smoothing                   smoothing value used in label smoothing [default value is 0.0]
 --temperature                 temperature scale used in temperature softmax [default value is 1.0]
 --recalls                     selected recall [default value is '1,2,4,8']

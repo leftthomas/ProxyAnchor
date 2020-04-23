@@ -29,9 +29,9 @@ class ProxyLinear(nn.Module):
         return 'in_features={}, out_features={}'.format(self.in_features, self.out_features)
 
 
-class GatePool(nn.Module):
+class MixPool(nn.Module):
     def __init__(self, channels, reduction=16):
-        super(GatePool, self).__init__()
+        super(MixPool, self).__init__()
         reduction_channels = max(channels // reduction, 8)
         self.conv1 = nn.Conv2d(channels, reduction_channels, kernel_size=1, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(reduction_channels)
@@ -54,7 +54,7 @@ class GatePool(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, remove_downsample):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_downsample, pool_type='mix'):
         super().__init__()
 
         # Backbone Network
@@ -68,7 +68,12 @@ class Model(nn.Module):
         self.features = nn.Sequential(*self.features)
 
         # pool
-        self.pool = GatePool(512 * expansion)
+        if pool_type == 'avg':
+            self.pool = nn.AdaptiveAvgPool2d(output_size=1)
+        elif pool_type == 'max':
+            self.pool = nn.AdaptiveMaxPool2d(output_size=1)
+        else:
+            self.pool = MixPool(512 * expansion)
 
         # Refactor Layer
         self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)

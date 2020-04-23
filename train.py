@@ -84,6 +84,8 @@ if __name__ == '__main__':
                         choices=['resnet50', 'seresnet50'], help='backbone network type')
     parser.add_argument('--remove_downsample', action='store_true', help='remove downsample of stage 4 or not')
     parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
+    parser.add_argument('--pool_type', default='mix', type=str,
+                        choices=['avg', 'max', 'mix'], help='pool type used in model')
     parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
     parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
@@ -93,11 +95,11 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, crop_type, backbone_type = opt.data_path, opt.data_name, opt.crop_type, opt.backbone_type
-    remove_downsample, feature_dim, smoothing = opt.remove_downsample, opt.feature_dim, opt.smoothing
-    temperature, batch_size, num_epochs = opt.temperature, opt.batch_size, opt.num_epochs
+    remove_downsample, feature_dim, pool_type = opt.remove_downsample, opt.feature_dim, opt.pool_type
+    smoothing, temperature, batch_size, num_epochs = opt.smoothing, opt.temperature, opt.batch_size, opt.num_epochs
     recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, remove_downsample, feature_dim,
-                                                  smoothing, temperature)
+    save_name_pre = '{}_{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, pool_type, remove_downsample,
+                                                     feature_dim, smoothing, temperature)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -116,7 +118,7 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, model profile, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_downsample).cuda()
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_downsample, pool_type).cuda()
     flops, params = profile(model, inputs=(torch.randn(1, 3, 224, 224).cuda(),))
     flops, params = clever_format([flops, params])
     print('# Model Params: {} FLOPs: {}'.format(params, flops))
