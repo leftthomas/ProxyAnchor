@@ -50,6 +50,16 @@ optional arguments:
 --retrieval_num               retrieval number [default value is 8]
 ```
 
+### Toy Example
+```
+python toy.py --batch_size 128
+optional arguments:
+--batch_size                  train batch size [default value is 512]
+--num_epochs                  train epoch number [default value is 40]
+--loss_type                   loss type [default value is 'norm'](choices=['norm', 'ada'])
+--temperature                 temperature scale used in temperature softmax [default value is 1.0]
+```
+
 ## Benchmarks
 The models are trained on one NVIDIA Tesla V100 (32G) GPU.
 
