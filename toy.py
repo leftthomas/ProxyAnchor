@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mpl_toolkits.mplot3d import Axes3D
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
