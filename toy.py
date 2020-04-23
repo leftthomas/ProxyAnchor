@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mpl_toolkits.mplot3d import Axes3D
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
@@ -46,7 +45,7 @@ def train(net, optim):
 
 def plot(embeds, labels, fig_path):
     fig = plt.figure(figsize=(10, 10))
-    ax = Axes3D(fig)
+    ax = fig.add_subplot(111, projection='3d')
 
     # create a sphere
     r, pi, cos, sin = 1, np.pi, np.cos, np.sin
