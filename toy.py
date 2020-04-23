@@ -116,7 +116,7 @@ def test(net, data_loader):
         for inputs, labels in data_loader:
             features, classes = model(inputs.cuda())
             full_features.append(features.detach().cpu().numpy())
-            full_labels.append(labels.cpu().detach().numpy())
+            full_labels.append(labels.detach().cpu().numpy())
     full_features, full_labels = np.concatenate(full_features), np.concatenate(full_labels)
     plot(full_features, full_labels, fig_path='{}_{}'.format(save_pre, 'toy_vis.pdf'))
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         train_loss, train_accuracy = train(model, optimizer)
         lr_scheduler.step()
         if train_accuracy > best_acc:
-            best_acc = train_loss
+            best_acc = train_accuracy
             torch.save(model.state_dict(), '{}_{}'.format(save_pre, 'toy_model.pth'))
 
     model.load_state_dict(torch.load('{}_{}'.format(save_pre, 'toy_model.pth'), map_location='cpu'))
