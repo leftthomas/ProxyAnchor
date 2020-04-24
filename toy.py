@@ -60,7 +60,7 @@ def plot(embeds, labels, fig_path):
     ax.set_xlim([-1, 1])
     ax.set_ylim([-1, 1])
     ax.set_zlim([-1, 1])
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
     plt.tight_layout()
     plt.savefig(fig_path)
 
