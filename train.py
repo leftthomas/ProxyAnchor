@@ -49,7 +49,7 @@ def test(net, recall_ids):
             eval_dict[key]['features'] = []
             for inputs, labels in tqdm(eval_dict[key]['data_loader'], desc='processing {} data'.format(key),
                                        dynamic_ncols=True):
-                features, classes = net(inputs.cuda())
+                features = net(inputs.cuda())
                 eval_dict[key]['features'].append(features)
             eval_dict[key]['features'] = torch.cat(eval_dict[key]['features'], dim=0)
 
@@ -81,25 +81,26 @@ if __name__ == '__main__':
     parser.add_argument('--crop_type', default='uncropped', type=str, choices=['uncropped', 'cropped'],
                         help='crop data or not, it only works for car or cub dataset')
     parser.add_argument('--backbone_type', default='resnet50', type=str,
-                        choices=['resnet50', 'seresnet50'], help='backbone network type')
-    parser.add_argument('--remove_downsample', action='store_true', help='remove downsample of stage 4 or not')
-    parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
+                        choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
+                        help='backbone network type, * means remove downsample of stage 4')
     parser.add_argument('--pool_type', default='mix', type=str,
                         choices=['avg', 'max', 'mix'], help='pool type used in model')
+    parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
+    parser.add_argument('--remove_common', action='store_true',
+                        help='remove common features in the training period or not')
     parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
-    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
-    parser.add_argument('--batch_size', default=128, type=int, help='train batch size')
-    parser.add_argument('--num_epochs', default=20, type=int, help='train epoch number')
+    parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
+    parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
     data_path, data_name, crop_type, backbone_type = opt.data_path, opt.data_name, opt.crop_type, opt.backbone_type
-    remove_downsample, feature_dim, pool_type = opt.remove_downsample, opt.feature_dim, opt.pool_type
-    smoothing, temperature, batch_size, num_epochs = opt.smoothing, opt.temperature, opt.batch_size, opt.num_epochs
+    pool_type, feature_dim, remove_common = opt.pool_type, opt.feature_dim, opt.remove_common
+    smoothing, batch_size, num_epochs = opt.smoothing, opt.batch_size, opt.num_epochs
     recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, pool_type, remove_downsample,
-                                                     feature_dim, smoothing, temperature)
+    save_name_pre = '{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, pool_type, feature_dim,
+                                                  remove_common, smoothing)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -118,13 +119,13 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, model profile, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_downsample, pool_type).cuda()
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_common, pool_type).cuda()
     flops, params = profile(model, inputs=(torch.randn(1, 3, 224, 224).cuda(),))
     flops, params = clever_format([flops, params])
     print('# Model Params: {} FLOPs: {}'.format(params, flops))
     optimizer = Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
-    loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
+    loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing)
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):

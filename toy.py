@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mpl_toolkits.mplot3d import Axes3D
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
@@ -133,8 +132,8 @@ if __name__ == "__main__":
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.286,), std=(0.353,))])
     train_data = FashionMNIST(root='data', train=True, download=True, transform=transform)
     test_data = FashionMNIST(root='data', train=False, download=True, transform=transform)
-    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, num_workers=8)
-    test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False, num_workers=8)
+    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=8, drop_last=True)
+    test_loader = DataLoader(test_data, args.batch_size, shuffle=False, num_workers=8)
 
     model = ToyModel(args.loss_type).cuda()
     optimizer = Adam(model.parameters(), lr=0.01)

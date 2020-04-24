@@ -54,14 +54,14 @@ class MixPool(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, remove_downsample, pool_type='mix'):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, pool_type='mix'):
         super().__init__()
 
         # Backbone Network
         backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
-        backbone, expansion = backbones[backbone_type]
+        backbone, expansion = backbones[backbone_type.replace('*', '')]
         self.features = []
-        for name, module in backbone(pretrained=True, remove_downsample=remove_downsample).named_children():
+        for name, module in backbone(pretrained=True, remove_downsample='*' in backbone_type).named_children():
             if isinstance(module, (nn.AdaptiveAvgPool2d, nn.Linear)):
                 continue
             self.features.append(module)
@@ -81,11 +81,19 @@ class Model(nn.Module):
         # Classification Layer
         self.fc = ProxyLinear(feature_dim, num_classes)
 
+        self.remove_common = remove_common
+
     def forward(self, x):
         features = self.features(x)
         global_feature = torch.flatten(self.pool(features), start_dim=2)
         global_feature = torch.flatten(self.refactor(global_feature), start_dim=1)
         feature = F.normalize(F.layer_norm(global_feature, global_feature.size()[1:]), dim=-1)
-        var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
-        classes = self.fc(((feature - mean) / torch.sqrt(var + 1e-5)))
-        return feature, classes
+        if self.training:
+            var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
+            if self.remove_common:
+                classes = self.fc(((feature - mean) / torch.sqrt(var + 1e-5)))
+            else:
+                classes = self.fc((feature / torch.sqrt(var + 1e-5)))
+            return feature, classes
+        else:
+            return feature

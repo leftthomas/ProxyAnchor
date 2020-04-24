@@ -1,5 +1,5 @@
-# MBNet
-A PyTorch implementation of MBNet based on the paper [Multiple Branches Network]().
+# AdaptiveNet
+A PyTorch implementation of AdaptiveNet based on the paper [Learn Temperature Scale and Pooling Adaptively]().
 
 ![Network Architecture](results/structure.png)
 
@@ -30,15 +30,14 @@ optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
 --crop_type                   crop data or not, it only works for car or cub dataset [default value is 'uncropped'](choices=['uncropped', 'cropped'])
---backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'seresnet50'])
---remove_downsample           remove downsample of stage 4 or not [default value is False]
---feature_dim                 feature dim [default value is 1536]
+--backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
 --pool_type                   pool type used in model [default value is 'mix'](choices=['avg', 'max', 'mix'])
+--feature_dim                 feature dim [default value is 1536]
+--remove_common               remove common features in the training period or not [default value is False]
 --smoothing                   smoothing value used in label smoothing [default value is 0.0]
---temperature                 temperature scale used in temperature softmax [default value is 1.0]
 --recalls                     selected recall [default value is '1,2,4,8']
---batch_size                  train batch size [default value is 128]
---num_epochs                  train epoch number [default value is 20]
+--batch_size                  training batch size [default value is 128]
+--num_epochs                  training epoch number [default value is 20]
 ```
 
 ### Test Model
