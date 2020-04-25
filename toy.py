@@ -10,10 +10,9 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import datasets
 from torchvision import transforms
-from tqdm import tqdm
 
 from model import ProxyLinear
-from utils import LabelSmoothingCrossEntropyLoss
+from utils import LabelSmoothingCrossEntropyLoss, train_model
 
 # for reproducibility
 torch.manual_seed(0)
@@ -93,27 +92,6 @@ class ToyModel(nn.Module):
             return feature
 
 
-def train_model(net, optim):
-    net.train()
-    total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_loader, dynamic_ncols=True)
-    for inputs, labels in data_bar:
-        inputs, labels = inputs.cuda(), labels.cuda()
-        features, classes = net(inputs)
-        loss = loss_criterion(classes, labels)
-        optim.zero_grad()
-        loss.backward()
-        optim.step()
-        pred = torch.argmax(classes, dim=-1)
-        total_loss += loss.item() * inputs.size(0)
-        total_correct += torch.sum(pred == labels).item()
-        total_num += inputs.size(0)
-        data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'
-                                 .format(epoch, args.num_epochs, total_loss / total_num,
-                                         total_correct / total_num * 100))
-
-    return total_loss / total_num, total_correct / total_num * 100
-
-
 def plot(embeds, labels, fig_path):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
@@ -172,7 +150,8 @@ if __name__ == "__main__":
     save_pre = 'results/{}_{}'.format(loss_type, temperature)
     best_acc = 0.0
     for epoch in range(1, num_epochs + 1):
-        train_loss, train_accuracy = train_model(model, optimizer)
+        train_loss, train_accuracy = train_model(model, optimizer, loss_criterion, train_loader,
+                                                 '{}/{}'.format(epoch, num_epochs), set_bn_fix=False)
         lr_scheduler.step()
         if train_accuracy > best_acc:
             best_acc = train_accuracy

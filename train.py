@@ -9,36 +9,14 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from model import Model, set_bn_eval
-from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss
+from model import Model
+from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, train_model
 
 # for reproducibility
 torch.manual_seed(0)
 np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
-
-def train(net, optim):
-    net.train()
-    # fix bn on backbone network
-    net.features.apply(set_bn_eval)
-    total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
-    for inputs, labels in data_bar:
-        inputs, labels = inputs.cuda(), labels.cuda()
-        features, classes = net(inputs)
-        loss = loss_criterion(classes, labels)
-        optim.zero_grad()
-        loss.backward()
-        optim.step()
-        pred = torch.argmax(classes, dim=-1)
-        total_loss += loss.item() * inputs.size(0)
-        total_correct += torch.sum(pred == labels).item()
-        total_num += inputs.size(0)
-        data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'
-                                 .format(epoch, num_epochs, total_loss / total_num, total_correct / total_num * 100))
-
-    return total_loss / total_num, total_correct / total_num * 100
 
 
 def test(net, recall_ids):
@@ -129,7 +107,8 @@ if __name__ == '__main__':
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
-        train_loss, train_accuracy = train(model, optimizer)
+        train_loss, train_accuracy = train_model(model, optimizer, loss_criterion, train_data_loader,
+                                                 '{}/{}'.format(epoch, num_epochs))
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
         rank = test(model, recalls)

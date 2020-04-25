@@ -7,12 +7,6 @@ from torch import nn
 from resnet import resnet50, seresnet50
 
 
-def set_bn_eval(m):
-    classname = m.__class__.__name__
-    if classname.find('BatchNorm2d') != -1:
-        m.eval()
-
-
 class ProxyLinear(nn.Module):
     def __init__(self, in_features, out_features):
         super(ProxyLinear, self).__init__()
