@@ -45,6 +45,54 @@ class FashionMNIST(datasets.FashionMNIST):
         self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
 
 
+class ToyModel(nn.Module):
+    def __init__(self, loss_types, num_classes):
+        super(ToyModel, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True))
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer4 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True))
+        self.layer5 = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=8, stride=1))
+        self.fc_projection = nn.Linear(512, 2)
+        self.fc_final = ProxyLinear(2, num_classes)
+        self.loss_type = loss_types
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = torch.flatten(x, start_dim=1)
+        feature = F.normalize(self.fc_projection(x), dim=-1)
+        if self.training:
+            if self.loss_type == 'ada':
+                var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
+                classes = self.fc_final((feature / torch.sqrt(var + 1e-5)))
+            else:
+                classes = self.fc_final(feature)
+            return feature, classes
+        else:
+            return feature
+
+
 def train_model(net, optim):
     net.train()
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_loader, dynamic_ncols=True)
@@ -87,51 +135,6 @@ def plot(embeds, labels, fig_path):
     plt.savefig(fig_path)
 
 
-class ToyModel(nn.Module):
-    def __init__(self, loss_type, num_classes=10):
-        super(ToyModel, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True))
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True))
-        self.layer5 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=8, stride=1))
-        self.fc_projection = nn.Linear(512, 3)
-        self.fc_final = ProxyLinear(3, num_classes)
-        self.loss_type = loss_type
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = torch.flatten(x, start_dim=1)
-        feature = F.normalize(self.fc_projection(x), dim=-1)
-        if self.loss_type == 'ada':
-            var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
-            classes = self.fc_final(((feature - mean) / torch.sqrt(var + 1e-5)))
-        else:
-            classes = self.fc_final(feature)
-        return feature, classes
-
-
 def test_model(net, data_loader):
     net.eval()
     full_features, full_labels = [], []
@@ -162,13 +165,13 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_data, batch_size, shuffle=True, num_workers=8, drop_last=True)
     test_loader = DataLoader(test_data, batch_size, shuffle=False, num_workers=8)
 
-    model = ToyModel(args.loss_type).cuda()
+    model = ToyModel(loss_type, num_classes=len(train_data.class_to_idx)).cuda()
     optimizer = Adam(model.parameters(), lr=0.01)
-    lr_scheduler = StepLR(optimizer, step_size=args.num_epochs // 5, gamma=0.25)
+    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 5, gamma=0.25)
     loss_criterion = LabelSmoothingCrossEntropyLoss(temperature=temperature)
-    save_pre = 'results/{}_{}'.format(args.loss_type, temperature)
+    save_pre = 'results/{}_{}'.format(loss_type, temperature)
     best_acc = 0.0
-    for epoch in range(1, args.num_epochs + 1):
+    for epoch in range(1, num_epochs + 1):
         train_loss, train_accuracy = train_model(model, optimizer)
         lr_scheduler.step()
         if train_accuracy > best_acc:
