@@ -8,8 +8,8 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
+from torchvision import datasets
 from torchvision import transforms
-from torchvision.datasets import FashionMNIST
 from tqdm import tqdm
 
 from model import ProxyLinear
@@ -22,7 +22,30 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-def train(net, optim):
+# use the first 7 classes as train classes, and the remaining classes as novel test classes
+class FashionMNIST(datasets.FashionMNIST):
+    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
+        super().__init__(root, train, transform, target_transform, download)
+        if train:
+            self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal',
+                            'Shirt']
+        else:
+            self.classes = ['Sneaker', 'Bag', 'Ankle boot']
+        super().__init__(root, train, transform, target_transform, download)
+        datas, targets = [], []
+        for data, target in zip(self.data, self.targets):
+            if train:
+                if target < 7:
+                    datas.append(data)
+                    targets.append(target)
+            else:
+                if target >= 7:
+                    datas.append(data)
+                    targets.append(target - 7)
+        self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
+
+
+def train_model(net, optim):
     net.train()
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
@@ -109,7 +132,7 @@ class ToyModel(nn.Module):
         return feature, classes
 
 
-def test(net, data_loader):
+def test_model(net, data_loader):
     net.eval()
     full_features, full_labels = [], []
     with torch.no_grad():
@@ -122,28 +145,31 @@ def test(net, data_loader):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Toy example in fashionMNIST dataset')
-    parser.add_argument('--batch_size', default=512, type=int, help='train batch size')
-    parser.add_argument('--num_epochs', default=40, type=int, help='train epoch number')
+    parser = argparse.ArgumentParser(description='Toy example in FashionMNIST dataset')
+    parser.add_argument('--data_path', default='/home/data/mnist', type=str, help='dataset path')
+    parser.add_argument('--batch_size', default=512, type=int, help='training batch size')
+    parser.add_argument('--num_epochs', default=40, type=int, help='training epoch number')
     parser.add_argument('--loss_type', default='norm', type=str, choices=['norm', 'ada'], help='loss type')
-    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
+    parser.add_argument('--temperature', default=0.1, type=float,
+                        help='temperature scale used in temperature softmax, only works for norm loss type')
     args = parser.parse_args()
+    data_path, batch_size, num_epochs, loss_type = args.data_path, args.batch_size, args.num_epochs, args.loss_type
+    temperature = args.temperature if loss_type == 'norm' else 1.0
 
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.286,), std=(0.353,))])
-    train_data = FashionMNIST(root='data', train=True, download=True, transform=transform)
-    test_data = FashionMNIST(root='data', train=False, download=True, transform=transform)
-    train_loader = DataLoader(train_data, args.batch_size, shuffle=True, num_workers=8, drop_last=True)
-    test_loader = DataLoader(test_data, args.batch_size, shuffle=False, num_workers=8)
+    data_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.286,), std=(0.353,))])
+    train_data = FashionMNIST(root=data_path, train=True, download=True, transform=data_transform)
+    test_data = FashionMNIST(root=data_path, train=False, download=True, transform=data_transform)
+    train_loader = DataLoader(train_data, batch_size, shuffle=True, num_workers=8, drop_last=True)
+    test_loader = DataLoader(test_data, batch_size, shuffle=False, num_workers=8)
 
     model = ToyModel(args.loss_type).cuda()
     optimizer = Adam(model.parameters(), lr=0.01)
     lr_scheduler = StepLR(optimizer, step_size=args.num_epochs // 5, gamma=0.25)
-    temperature = args.temperature if args.loss_type == 'norm' else 1.0
     loss_criterion = LabelSmoothingCrossEntropyLoss(temperature=temperature)
     save_pre = 'results/{}_{}'.format(args.loss_type, temperature)
     best_acc = 0.0
     for epoch in range(1, args.num_epochs + 1):
-        train_loss, train_accuracy = train(model, optimizer)
+        train_loss, train_accuracy = train_model(model, optimizer)
         lr_scheduler.step()
         if train_accuracy > best_acc:
             best_acc = train_accuracy
@@ -151,4 +177,4 @@ if __name__ == "__main__":
 
     model.load_state_dict(torch.load('{}_{}'.format(save_pre, 'toy_model.pth'), map_location='cpu'))
     model = model.cuda()
-    test(model, test_loader)
+    test_model(model, test_loader)
