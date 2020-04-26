@@ -34,6 +34,7 @@ optional arguments:
 --pool_type                   pool type used in model [default value is 'mix'](choices=['avg', 'max', 'mix'])
 --feature_dim                 feature dim [default value is 1536]
 --remove_common               remove common features in the training period or not [default value is False]
+--temperature                 temperature scale used in temperature softmax [default value is 1.0]
 --smoothing                   smoothing value used in label smoothing [default value is 0.0]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 128]
@@ -47,16 +48,6 @@ optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
 --data_base                   queried database [default value is 'car_uncropped_resnet50_False_1536_0.0_1.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
-```
-
-### Toy Example
-```
-python toy.py --batch_size 128
-optional arguments:
---batch_size                  train batch size [default value is 512]
---num_epochs                  train epoch number [default value is 40]
---loss_type                   loss type [default value is 'norm'](choices=['norm', 'ada'])
---temperature                 temperature scale used in temperature softmax [default value is 1.0]
 ```
 
 ## Benchmarks

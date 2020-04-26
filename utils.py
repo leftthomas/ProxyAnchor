@@ -4,7 +4,6 @@ from PIL import Image
 from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
-from tqdm import tqdm
 
 
 class ImageReader(Dataset):
@@ -40,29 +39,6 @@ def set_bn_eval(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm2d') != -1:
         m.eval()
-
-
-def train_model(net, optim, loss_fn, data_loader, iters, set_bn_fix=True):
-    net.train()
-    if set_bn_fix:
-        # fix bn on backbone network
-        net.features.apply(set_bn_eval)
-    total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(data_loader, dynamic_ncols=True)
-    for inputs, labels in data_bar:
-        inputs, labels = inputs.cuda(), labels.cuda()
-        features, classes = net(inputs)
-        loss = loss_fn(classes, labels)
-        optim.zero_grad()
-        loss.backward()
-        optim.step()
-        pred = torch.argmax(classes, dim=-1)
-        total_loss += loss.item() * inputs.size(0)
-        total_correct += torch.sum(pred == labels).item()
-        total_num += inputs.size(0)
-        data_bar.set_description('Train Epoch {} - Loss:{:.4f} - Acc:{:.2f}%'
-                                 .format(iters, total_loss / total_num, total_correct / total_num * 100))
-
-    return total_loss / total_num, total_correct / total_num * 100
 
 
 def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_labels=None, binary=False):
