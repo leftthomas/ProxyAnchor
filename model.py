@@ -48,7 +48,8 @@ class MixPool(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, pool_type='mix'):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, pool_type='mix',
+                 use_temperature=False):
         super().__init__()
 
         # Backbone Network
@@ -76,6 +77,7 @@ class Model(nn.Module):
         self.fc = ProxyLinear(feature_dim, num_classes)
 
         self.remove_common = remove_common
+        self.use_temperature = use_temperature
 
     def forward(self, x):
         features = self.features(x)
@@ -85,9 +87,15 @@ class Model(nn.Module):
         if self.training:
             var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
             if self.remove_common:
-                classes = self.fc(((feature - mean) / torch.sqrt(var + 1e-5)))
+                if self.use_temperature:
+                    classes = self.fc(feature - mean)
+                else:
+                    classes = self.fc((feature - mean) / torch.sqrt(var + 1e-5))
             else:
-                classes = self.fc((feature / torch.sqrt(var + 1e-5)))
+                if self.use_temperature:
+                    classes = self.fc(feature)
+                else:
+                    classes = self.fc(feature / torch.sqrt(var + 1e-5))
             return feature, classes
         else:
             return feature
