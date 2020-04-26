@@ -10,9 +10,10 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import datasets
 from torchvision import transforms
+from tqdm import tqdm
 
 from model import ProxyLinear
-from utils import LabelSmoothingCrossEntropyLoss, train_model
+from utils import LabelSmoothingCrossEntropyLoss, train_model, recall
 
 # for reproducibility
 torch.manual_seed(0)
@@ -36,12 +37,12 @@ class FashionMNIST(datasets.FashionMNIST):
             if train:
                 if target < 7:
                     datas.append(data)
-                    targets.append(target)
+                    targets.append(target.item())
             else:
                 if target >= 7:
                     datas.append(data)
-                    targets.append(target - 7)
-        self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
+                    targets.append(target.item() - 7)
+        self.data, self.targets = torch.stack(datas, dim=0), targets
 
 
 class ToyModel(nn.Module):
@@ -69,8 +70,8 @@ class ToyModel(nn.Module):
             nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=8, stride=1))
-        self.fc_projection = nn.Linear(512, 2)
-        self.fc_final = ProxyLinear(2, num_classes)
+        self.fc_projection = nn.Linear(512, 3)
+        self.fc_final = ProxyLinear(3, num_classes)
         self.loss_type = loss_types
 
     def forward(self, x):
@@ -115,14 +116,15 @@ def plot(embeds, labels, fig_path):
 
 def test_model(net, data_loader):
     net.eval()
-    full_features, full_labels = [], []
+    full_features = []
     with torch.no_grad():
-        for inputs, labels in data_loader:
-            features, classes = model(inputs.cuda())
-            full_features.append(features.detach().cpu().numpy())
-            full_labels.append(labels.detach().cpu().numpy())
-    full_features, full_labels = np.concatenate(full_features), np.concatenate(full_labels)
-    plot(full_features, full_labels, fig_path='{}_{}'.format(save_pre, 'toy_vis.pdf'))
+        for inputs, labels in tqdm(data_loader, desc='processing test data', dynamic_ncols=True):
+            features = net(inputs.cuda())
+            full_features.append(features)
+        full_features = torch.cat(full_features, dim=0)
+        rank = recall(full_features, test_data.targets, [1])
+    print('Test Epoch {}/{} R@1:{:.2f}%'.format(epoch, num_epochs, rank[0] * 100))
+    plot(full_features.cpu().numpy(), np.asarray(test_data.targets), fig_path='{}_{}'.format(save_pre, 'toy_vis.pdf'))
 
 
 if __name__ == "__main__":
@@ -131,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', default=512, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=40, type=int, help='training epoch number')
     parser.add_argument('--loss_type', default='norm', type=str, choices=['norm', 'ada'], help='loss type')
-    parser.add_argument('--temperature', default=0.1, type=float,
+    parser.add_argument('--temperature', default=0.05, type=float,
                         help='temperature scale used in temperature softmax, only works for norm loss type')
     args = parser.parse_args()
     data_path, batch_size, num_epochs, loss_type = args.data_path, args.batch_size, args.num_epochs, args.loss_type
