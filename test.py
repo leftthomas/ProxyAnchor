@@ -9,7 +9,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test Model')
     parser.add_argument('--query_img_name', default='/home/data/car/uncropped/008055.jpg', type=str,
                         help='query image name')
-    parser.add_argument('--data_base', default='car_uncropped_resnet50_False_1536_0.0_1.0_data_base.pth',
+    parser.add_argument('--data_base', default='car_uncropped_resnet50_1536_False_0.0_1.0_data_base.pth',
                         type=str, help='queried database')
     parser.add_argument('--retrieval_num', default=8, type=int, help='retrieval number')
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     if query_img_name not in data_base['test_images']:
         raise FileNotFoundError('{} not found'.format(query_img_name))
     query_index = data_base['test_images'].index(query_img_name)
-    query_image = Image.open(query_img_name).convert('RGB').resize((224, 224), resample=Image.BILINEAR)
+    query_image = Image.open(query_img_name).convert('RGB').resize((256, 256), resample=Image.BILINEAR)
     query_label = torch.tensor(data_base['test_labels'][query_index])
     query_feature = data_base['test_features'][query_index]
 
@@ -43,13 +43,13 @@ if __name__ == '__main__':
     query_image.save('{}/query_img.jpg'.format(result_path))
     for num, index in enumerate(idx):
         retrieval_image = Image.open(gallery_images[index.item()]).convert('RGB') \
-            .resize((224, 224), resample=Image.BILINEAR)
+            .resize((256, 256), resample=Image.BILINEAR)
         draw = ImageDraw.Draw(retrieval_image)
         retrieval_label = gallery_labels[index.item()]
         retrieval_status = (retrieval_label == query_label).item()
         retrieval_dist = sim_matrix[index.item()].item()
         if retrieval_status:
-            draw.rectangle((0, 0, 223, 223), outline='green', width=8)
+            draw.rectangle((0, 0, 255, 255), outline='green', width=8)
         else:
-            draw.rectangle((0, 0, 223, 223), outline='red', width=8)
+            draw.rectangle((0, 0, 255, 255), outline='red', width=8)
         retrieval_image.save('{}/retrieval_img_{}_{}.jpg'.format(result_path, num + 1, '%.4f' % retrieval_dist))

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 from thop import profile, clever_format
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -49,7 +49,7 @@ def test(net, recall_ids):
             eval_dict[key]['features'] = []
             for inputs, labels in tqdm(eval_dict[key]['data_loader'], desc='processing {} data'.format(key),
                                        dynamic_ncols=True):
-                features = net(inputs.cuda())
+                features, classes = net(inputs.cuda())
                 eval_dict[key]['features'].append(features)
             eval_dict[key]['features'] = torch.cat(eval_dict[key]['features'], dim=0)
 
@@ -83,8 +83,6 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str,
                         choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
                         help='backbone network type, * means remove downsample of stage 4')
-    parser.add_argument('--pool_type', default='mix', type=str,
-                        choices=['avg', 'max', 'mix'], help='pool type used in model')
     parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
     parser.add_argument('--remove_common', action='store_true',
                         help='remove common features in the training period or not')
@@ -97,11 +95,11 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, crop_type, backbone_type = opt.data_path, opt.data_name, opt.crop_type, opt.backbone_type
-    pool_type, feature_dim, remove_common = opt.pool_type, opt.feature_dim, opt.remove_common
-    temperature, smoothing, batch_size, num_epochs = opt.temperature, opt.smoothing, opt.batch_size, opt.num_epochs
+    feature_dim, remove_common, temperature = opt.feature_dim, opt.remove_common, opt.temperature
+    smoothing, batch_size, num_epochs = opt.smoothing, opt.batch_size, opt.num_epochs
     recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, pool_type, feature_dim,
-                                                     remove_common, temperature, smoothing)
+    save_name_pre = '{}_{}_{}_{}_{}_{}_{}'.format(data_name, crop_type, backbone_type, feature_dim, remove_common,
+                                                  temperature, smoothing)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -120,12 +118,12 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, model profile, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_common, pool_type,
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_common,
                   temperature != 1.0).cuda()
-    flops, params = profile(model, inputs=(torch.randn(1, 3, 224, 224).cuda(),))
+    flops, params = profile(model, inputs=(torch.randn(1, 3, 256, 256).cuda(),))
     flops, params = clever_format([flops, params])
     print('# Model Params: {} FLOPs: {}'.format(params, flops))
-    optimizer = Adam(model.parameters(), lr=1e-4, weight_decay=1e-5)
+    optimizer = AdamW(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
 

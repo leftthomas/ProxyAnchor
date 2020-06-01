@@ -1,5 +1,3 @@
-import math
-
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -12,8 +10,8 @@ class ProxyLinear(nn.Module):
         super(ProxyLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
-        nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        # init proxy vector as unit random vector
+        self.weight = nn.Parameter(F.normalize(torch.randn(out_features, in_features), dim=-1))
 
     def forward(self, x):
         output = x.matmul(F.normalize(self.weight, dim=-1).t())
@@ -23,33 +21,8 @@ class ProxyLinear(nn.Module):
         return 'in_features={}, out_features={}'.format(self.in_features, self.out_features)
 
 
-class MixPool(nn.Module):
-    def __init__(self, channels, reduction=16):
-        super(MixPool, self).__init__()
-        reduction_channels = max(channels // reduction, 8)
-        self.conv1 = nn.Conv2d(channels, reduction_channels, kernel_size=1, padding=0, bias=False)
-        self.bn = nn.BatchNorm2d(reduction_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.avg_pool = nn.AdaptiveAvgPool2d(output_size=1)
-        self.conv_2 = nn.Conv2d(reduction_channels, channels, kernel_size=1, padding=0, bias=True)
-
-        nn.init.kaiming_normal_(self.conv1.weight)
-        nn.init.kaiming_normal_(self.conv_2.weight)
-        nn.init.constant_(self.conv_2.bias, 1.5)
-
-    def forward(self, x):
-        max_value = F.adaptive_max_pool2d(x, output_size=(1, 1))
-        avg_value = F.adaptive_avg_pool2d(x, output_size=(1, 1))
-
-        x = self.relu(self.bn(self.conv1(x)))
-        gate = torch.sigmoid(self.conv_2(self.avg_pool(x)))
-        output = gate * max_value + (1.0 - gate) * avg_value
-        return output
-
-
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, pool_type='mix',
-                 use_temperature=False):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, use_temperature=False):
         super().__init__()
 
         # Backbone Network
@@ -61,14 +34,7 @@ class Model(nn.Module):
                 continue
             self.features.append(module)
         self.features = nn.Sequential(*self.features)
-
-        # pool
-        if pool_type == 'avg':
-            self.pool = nn.AdaptiveAvgPool2d(output_size=1)
-        elif pool_type == 'max':
-            self.pool = nn.AdaptiveMaxPool2d(output_size=1)
-        else:
-            self.pool = MixPool(512 * expansion)
+        self.pool = nn.AdaptiveMaxPool2d(output_size=1)
 
         # Refactor Layer
         self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)
@@ -84,18 +50,15 @@ class Model(nn.Module):
         global_feature = torch.flatten(self.pool(features), start_dim=2)
         global_feature = torch.flatten(self.refactor(global_feature), start_dim=1)
         feature = F.normalize(F.layer_norm(global_feature, global_feature.size()[1:]), dim=-1)
-        if self.training:
-            var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
-            if self.remove_common:
-                if self.use_temperature:
-                    classes = self.fc(feature - mean)
-                else:
-                    classes = self.fc((feature - mean) / torch.sqrt(var + 1e-5))
+        var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
+        if self.remove_common:
+            if self.use_temperature:
+                classes = self.fc(feature - mean)
             else:
-                if self.use_temperature:
-                    classes = self.fc(feature)
-                else:
-                    classes = self.fc(feature / torch.sqrt(var + 1e-5))
-            return feature, classes
+                classes = self.fc((feature - mean) / torch.sqrt(var + 1e-5))
         else:
-            return feature
+            if self.use_temperature:
+                classes = self.fc(feature)
+            else:
+                classes = self.fc(feature / torch.sqrt(var + 1e-5))
+        return feature, classes

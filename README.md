@@ -1,5 +1,5 @@
 # AdaptiveNet
-A PyTorch implementation of AdaptiveNet based on the paper [Learn Temperature Scale and Pooling Adaptively]().
+A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature Scale for Image Retrieval]().
 
 ![Network Architecture](results/structure.png)
 
@@ -31,7 +31,6 @@ optional arguments:
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
 --crop_type                   crop data or not, it only works for car or cub dataset [default value is 'uncropped'](choices=['uncropped', 'cropped'])
 --backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
---pool_type                   pool type used in model [default value is 'mix'](choices=['avg', 'max', 'mix'])
 --feature_dim                 feature dim [default value is 1536]
 --remove_common               remove common features in the training period or not [default value is False]
 --temperature                 temperature scale used in temperature softmax [default value is 1.0]
@@ -46,7 +45,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_uncropped_resnet50_False_1536_0.0_1.0_data_base.pth']
+--data_base                   queried database [default value is 'car_uncropped_resnet50_1536_False_0.0_1.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
