@@ -9,10 +9,6 @@ A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature
 ```
 conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 ```
-- thop
-```
-pip install thop
-```
 
 ## Datasets
 [CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [CUB200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html), 
@@ -29,7 +25,6 @@ python train.py --feature_dim 1024
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
---crop_type                   crop data or not, it only works for car or cub dataset [default value is 'uncropped'](choices=['uncropped', 'cropped'])
 --backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
 --feature_dim                 feature dim [default value is 1536]
 --remove_common               remove common features in the training period or not [default value is False]
@@ -45,43 +40,14 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_uncropped_resnet50_1536_False_0.0_1.0_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_1536_False_1.0_0.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
 ## Benchmarks
 The models are trained on one NVIDIA Tesla V100 (32G) GPU.
 
-### Model Parameters and FLOPs (Params | FLOPs)
-<table>
-  <thead>
-    <tr>
-      <th>Backbone</th>
-      <th>CARS196</th>
-      <th>CUB200</th>
-      <th>SOP</th>
-      <th>In-shop</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center">ResNet50</td>
-      <td align="center">26.81M | 4.41G</td>
-      <td align="center">26.81M | 4.41G</td>
-      <td align="center">50.88M | 4.12G</td>
-      <td align="center">35.89M | 4.12G</td>
-    </tr>
-    <tr>
-      <td align="center">SEResNet50</td>
-      <td align="center">29.34M | 4.41G</td>
-      <td align="center">29.34M | 4.41G</td>
-      <td align="center">50.88M | 4.12G</td>
-      <td align="center">35.89M | 4.12G</td>
-    </tr>
-  </tbody>
-</table>
-
-### CARS196 Uncropped (Dense | Binary)
+### CARS196 (Dense | Binary)
 <table>
   <thead>
     <tr>
@@ -113,71 +79,7 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
   </tbody>
 </table>
 
-### CUB200 Uncropped (Dense | Binary)
-<table>
-  <thead>
-    <tr>
-      <th>Backbone</th>
-      <th>R@1</th>
-      <th>R@2</th>
-      <th>R@4</th>
-      <th>R@8</th>
-      <th>Download Link</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center">ResNet50</td>
-      <td align="center">64.1% | 68.4%</td>
-      <td align="center">75.4% | 79.9%</td>
-      <td align="center">83.6% | 87.6%</td>
-      <td align="center">90.6% | 92.9%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
-    </tr>
-    <tr>
-      <td align="center">SEResNet50</td>
-      <td align="center">62.7% | 66.8%</td>
-      <td align="center">74.4% | 78.7%</td>
-      <td align="center">82.8% | 87.2%</td>
-      <td align="center">90.0% | 92.7%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
-    </tr>
-  </tbody>
-</table>
-
-### CARS196 Cropped (Dense | Binary)
-<table>
-  <thead>
-    <tr>
-      <th>Backbone</th>
-      <th>R@1</th>
-      <th>R@2</th>
-      <th>R@4</th>
-      <th>R@8</th>
-      <th>Download Link</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center">ResNet50</td>
-      <td align="center">86.1% | 91.4%</td>
-      <td align="center">91.9% | 95.0%</td>
-      <td align="center">95.4% | 97.1%</td>
-      <td align="center">97.4% | 98.3%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
-    </tr>
-    <tr>
-      <td align="center">SEResNet50</td>
-      <td align="center">85.2% | 90.6%</td>
-      <td align="center">91.6% | 94.6%</td>
-      <td align="center">95.2% | 96.9%</td>
-      <td align="center">97.3% | 98.2%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
-    </tr>
-  </tbody>
-</table>
-
-### CUB200 Cropped (Dense | Binary)
+### CUB200 (Dense | Binary)
 <table>
   <thead>
     <tr>
@@ -281,7 +183,7 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
 
 ## Results
 
-### CAR/CUB (Uncropped | Cropped)
+### CAR/CUB
 
 ![CAR/CUB](results/car_cub.png)
 
