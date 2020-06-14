@@ -1,6 +1,5 @@
 import argparse
 
-import numpy as np
 import pandas as pd
 import torch
 from torch.nn import CrossEntropyLoss
@@ -12,12 +11,6 @@ from tqdm import tqdm
 from model import Model
 from utils import recall, ImageReader
 
-# for reproducibility
-torch.manual_seed(0)
-np.random.seed(0)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-
 
 def train(net, optim):
     net.train()
@@ -28,6 +21,7 @@ def train(net, optim):
         loss = loss_criterion(classes / temperature, labels)
         optim.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_value_(net.parameters(), 10)
         optim.step()
         pred = torch.argmax(classes, dim=-1)
         total_loss += loss.item() * inputs.size(0)
@@ -109,7 +103,7 @@ if __name__ == '__main__':
     optimizer = Adam([{'params': model.features.parameters()},
                       {'params': model.refactor.parameters()},
                       {'params': model.fc.parameters(), 'lr': 4e2},
-                      ], lr=4e-3)
+                      ], lr=4e-3, eps=1.0)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = CrossEntropyLoss()
 
