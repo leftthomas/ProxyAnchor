@@ -11,7 +11,7 @@ class ProxyLinear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         # init proxy vector as unit random vector
-        self.weight = nn.Parameter(F.normalize(torch.randn(out_features, in_features), dim=-1))
+        self.weight = nn.Parameter(torch.randn(out_features, in_features))
 
     def forward(self, x):
         output = x.matmul(F.normalize(self.weight, dim=-1).t())
@@ -37,8 +37,7 @@ class Model(nn.Module):
         self.pool = nn.AdaptiveMaxPool2d(output_size=1)
 
         # Refactor Layer
-        self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)
-        nn.init.kaiming_uniform_(self.refactor.weight)
+        self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
         # Classification Layer
         self.fc = ProxyLinear(feature_dim, num_classes)
 
@@ -47,9 +46,9 @@ class Model(nn.Module):
 
     def forward(self, x):
         features = self.features(x)
-        global_feature = torch.flatten(self.pool(features), start_dim=2)
-        global_feature = torch.flatten(self.refactor(global_feature), start_dim=1)
-        feature = F.normalize(F.layer_norm(global_feature, global_feature.size()[1:]), dim=-1)
+        global_feature = torch.flatten(self.pool(features), start_dim=1)
+        global_feature = F.layer_norm(global_feature, global_feature.size()[1:])
+        feature = F.normalize(self.refactor(global_feature), dim=-1)
         var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
         if self.remove_common:
             if self.use_temperature:
