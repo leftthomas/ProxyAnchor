@@ -1,5 +1,5 @@
-# ProxyNCA++
-A PyTorch implementation of ProxyNCA++ based on the paper [ProxyNCA++: Revisiting and Revitalizing Proxy Neighborhood Component Analysis](https://arxiv.org/abs/2004.01113).
+# AdaptiveNet
+A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature Scale for Image Retrieval]().
 
 ![Network Architecture](results/structure.png)
 
@@ -7,7 +7,7 @@ A PyTorch implementation of ProxyNCA++ based on the paper [ProxyNCA++: Revisitin
 - [Anaconda](https://www.anaconda.com/download/)
 - [PyTorch](https://pytorch.org)
 ```
-conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
+conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 ```
 
 ## Datasets
@@ -25,11 +25,14 @@ python train.py --feature_dim 1024
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
---feature_dim                 feature dim [default value is 2048]
---temperature                 temperature scale used in temperature softmax [default value is 9]
+--backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
+--feature_dim                 feature dim [default value is 1536]
+--remove_common               remove common features in the training period or not [default value is False]
+--temperature                 temperature scale used in temperature softmax [default value is 1.0]
+--smoothing                   smoothing value used in label smoothing [default value is 0.0]
 --recalls                     selected recall [default value is '1,2,4,8']
---batch_size                  training batch size [default value is 32]
---num_epochs                  training epoch number [default value is 40]
+--batch_size                  training batch size [default value is 128]
+--num_epochs                  training epoch number [default value is 20]
 ```
 
 ### Test Model
@@ -37,7 +40,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_2048_9_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_1536_False_1.0_0.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

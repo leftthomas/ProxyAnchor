@@ -1,27 +1,34 @@
 import argparse
 
+import numpy as np
 import pandas as pd
 import torch
-from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader
+from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
+
+# for reproducibility
+torch.manual_seed(0)
+np.random.seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def train(net, optim):
     net.train()
+    # fix bn on backbone network
+    net.features.apply(set_bn_eval)
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
-        loss = loss_criterion(classes / temperature, labels)
+        loss = loss_criterion(classes, labels)
         optim.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_value_(net.parameters(), 10)
         optim.step()
         pred = torch.argmax(classes, dim=-1)
         total_loss += loss.item() * inputs.size(0)
@@ -70,17 +77,25 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='/home/data', type=str, help='datasets path')
     parser.add_argument('--data_name', default='car', type=str, choices=['car', 'cub', 'sop', 'isc'],
                         help='dataset name')
-    parser.add_argument('--feature_dim', default=2048, type=int, help='feature dim')
-    parser.add_argument('--temperature', default=9, type=float, help='temperature scale used in temperature softmax')
+    parser.add_argument('--backbone_type', default='resnet50', type=str,
+                        choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
+                        help='backbone network type, * means remove downsample of stage 4')
+    parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
+    parser.add_argument('--remove_common', action='store_true',
+                        help='remove common features in the training period or not')
+    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
+    parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
-    parser.add_argument('--batch_size', default=32, type=int, help='training batch size')
-    parser.add_argument('--num_epochs', default=40, type=int, help='training epoch number')
+    parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
+    parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
-    data_path, data_name, feature_dim, temperature = opt.data_path, opt.data_name, opt.feature_dim, opt.temperature
+    data_path, data_name, backbone_type, feature_dim = opt.data_path, opt.data_name, opt.backbone_type, opt.feature_dim
+    remove_common, temperature, smoothing = opt.remove_common, opt.temperature, opt.smoothing
     batch_size, num_epochs, recalls = opt.batch_size, opt.num_epochs, [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}'.format(data_name, feature_dim, temperature)
+    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, remove_common, temperature,
+                                               smoothing)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -89,23 +104,21 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train')
-    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=16, drop_last=True)
+    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8, drop_last=True)
     test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test')
-    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=16)
+    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
     eval_dict = {'test': {'data_loader': test_data_loader}}
     if data_name == 'isc':
         gallery_data_set = ImageReader(data_path, data_name, 'gallery')
-        gallery_data_loader = DataLoader(gallery_data_set, batch_size, shuffle=False, num_workers=16)
+        gallery_data_loader = DataLoader(gallery_data_set, batch_size, shuffle=False, num_workers=8)
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, optimizer config and loss definition
-    model = Model(feature_dim, len(train_data_set.class_to_idx)).cuda()
-    optimizer = Adam([{'params': model.features.parameters()},
-                      {'params': model.refactor.parameters()},
-                      {'params': model.fc.parameters(), 'lr': 4e2},
-                      ], lr=4e-3, eps=1.0)
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_common,
+                  temperature != 1.0).cuda()
+    optimizer = AdamW(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
-    loss_criterion = CrossEntropyLoss()
+    loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):

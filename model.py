@@ -1,7 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torchvision.models import resnet50
+
+from resnet import resnet50, seresnet50
 
 
 class ProxyLinear(nn.Module):
@@ -10,10 +11,10 @@ class ProxyLinear(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         # init proxy vector as unit random vector
-        self.weight = nn.Parameter(torch.randn(out_features, in_features) / 8)
+        self.weight = nn.Parameter(F.normalize(torch.randn(out_features, in_features), dim=-1))
 
     def forward(self, x):
-        output = F.normalize(x, dim=-1).matmul(F.normalize(self.weight, dim=-1).t())
+        output = x.matmul(F.normalize(self.weight, dim=-1).t())
         return output
 
     def extra_repr(self):
@@ -21,12 +22,14 @@ class ProxyLinear(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, feature_dim, num_classes):
+    def __init__(self, backbone_type, feature_dim, num_classes, remove_common=True, use_temperature=False):
         super().__init__()
 
         # Backbone Network
+        backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
+        backbone, expansion = backbones[backbone_type.replace('*', '')]
         self.features = []
-        for name, module in resnet50(pretrained=True).named_children():
+        for name, module in backbone(pretrained=True, remove_downsample='*' in backbone_type).named_children():
             if isinstance(module, (nn.AdaptiveAvgPool2d, nn.Linear)):
                 continue
             self.features.append(module)
@@ -34,14 +37,28 @@ class Model(nn.Module):
         self.pool = nn.AdaptiveMaxPool2d(output_size=1)
 
         # Refactor Layer
-        self.refactor = nn.Linear(2048, feature_dim)
+        self.refactor = nn.Conv1d(512 * expansion, feature_dim, 1, bias=False)
+        nn.init.kaiming_uniform_(self.refactor.weight)
         # Classification Layer
         self.fc = ProxyLinear(feature_dim, num_classes)
 
+        self.remove_common = remove_common
+        self.use_temperature = use_temperature
+
     def forward(self, x):
         features = self.features(x)
-        global_feature = torch.flatten(self.pool(features), start_dim=1)
-        global_feature = F.layer_norm(global_feature, global_feature.size()[1:])
-        feature = self.refactor(global_feature)
-        classes = self.fc(feature)
+        global_feature = torch.flatten(self.pool(features), start_dim=2)
+        global_feature = torch.flatten(self.refactor(global_feature), start_dim=1)
+        feature = F.normalize(F.layer_norm(global_feature, global_feature.size()[1:]), dim=-1)
+        var, mean = torch.var_mean(feature, dim=0, unbiased=False, keepdim=True)
+        if self.remove_common:
+            if self.use_temperature:
+                classes = self.fc(feature - mean)
+            else:
+                classes = self.fc((feature - mean) / torch.sqrt(var + 1e-5))
+        else:
+            if self.use_temperature:
+                classes = self.fc(feature)
+            else:
+                classes = self.fc(feature / torch.sqrt(var + 1e-5))
         return feature, classes

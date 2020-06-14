@@ -1,5 +1,7 @@
 import torch
+import torch.nn.functional as F
 from PIL import Image
+from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -11,10 +13,10 @@ class ImageReader(Dataset):
         self.class_to_idx = dict(zip(sorted(data_dict), range(len(data_dict))))
         normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         if data_type == 'train':
-            self.transform = transforms.Compose([transforms.RandomResizedCrop(256),
+            self.transform = transforms.Compose([transforms.RandomResizedCrop((256, 256)),
                                                  transforms.RandomHorizontalFlip(), transforms.ToTensor(), normalize])
         else:
-            self.transform = transforms.Compose([transforms.Resize(288), transforms.CenterCrop(256),
+            self.transform = transforms.Compose([transforms.Resize((288, 288)), transforms.CenterCrop(256),
                                                  transforms.ToTensor(), normalize])
         self.images, self.labels = [], []
         for label, image_list in data_dict.items():
@@ -29,6 +31,12 @@ class ImageReader(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+def set_bn_eval(m):
+    classname = m.__class__.__name__
+    if classname.find('BatchNorm2d') != -1:
+        m.eval()
 
 
 def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_labels=None, binary=False):
@@ -53,3 +61,16 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
         acc_list.append((torch.sum(correct) / num_features).item())
     return acc_list
 
+
+class LabelSmoothingCrossEntropyLoss(nn.Module):
+    def __init__(self, smoothing=0.0, temperature=1.0):
+        super().__init__()
+        self.smoothing = smoothing
+        self.temperature = temperature
+
+    def forward(self, x, target):
+        log_probs = F.log_softmax(x / self.temperature, dim=-1)
+        nll_loss = -log_probs.gather(dim=-1, index=target.unsqueeze(dim=-1)).squeeze(dim=-1)
+        smooth_loss = -log_probs.mean(dim=-1)
+        loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
+        return loss.mean()
