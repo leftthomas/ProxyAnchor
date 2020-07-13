@@ -80,9 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str,
                         choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
                         help='backbone network type, * means remove downsample of stage 4')
-    parser.add_argument('--feature_dim', default=1536, type=int, help='feature dim')
-    parser.add_argument('--remove_common', action='store_true',
-                        help='remove common features in the training period or not')
+    parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
@@ -92,10 +90,9 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, feature_dim = opt.data_path, opt.data_name, opt.backbone_type, opt.feature_dim
-    remove_common, temperature, smoothing = opt.remove_common, opt.temperature, opt.smoothing
-    batch_size, num_epochs, recalls = opt.batch_size, opt.num_epochs, [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, remove_common, temperature,
-                                               smoothing)
+    temperature, smoothing, batch_size, num_epochs = opt.temperature, opt.smoothing, opt.batch_size, opt.num_epochs
+    recalls = [int(k) for k in opt.recalls.split(',')]
+    save_name_pre = '{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, smoothing)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -104,7 +101,7 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train')
-    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8, drop_last=True)
+    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
     test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test')
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
     eval_dict = {'test': {'data_loader': test_data_loader}}
@@ -114,8 +111,7 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), remove_common,
-                  temperature != 1.0).cuda()
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), temperature != 1.0).cuda()
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
