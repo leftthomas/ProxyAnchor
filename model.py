@@ -18,7 +18,7 @@ class ProxyLinear(nn.Module):
         normalized_weight = F.normalize(self.weight, dim=-1)
         var = torch.var(normalized_weight, dim=0, unbiased=False, keepdim=True)
         if not self.use_temperature:
-            normalized_weight = normalized_weight / var
+            normalized_weight = normalized_weight / torch.sqrt(var)
         output = x.matmul(normalized_weight.t())
         return output
 
