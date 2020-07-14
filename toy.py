@@ -129,10 +129,7 @@ def plot(embeds, labels, fig_path):
     ax = fig.add_subplot(111, projection='3d')
 
     # create a sphere
-    r = 1
-    pi = np.pi
-    cos = np.cos
-    sin = np.sin
+    r, pi, cos, sin = 1, np.pi, np.cos, np.sin
     phi, theta = np.mgrid[0.0:pi:100j, 0.0:2.0 * pi:100j]
     x = r * sin(phi) * cos(theta)
     y = r * sin(phi) * sin(theta)
@@ -145,6 +142,7 @@ def plot(embeds, labels, fig_path):
     ax.set_zlim([-1, 1])
     plt.tight_layout()
     plt.savefig(fig_path)
+    plt.close(fig)
 
 
 if __name__ == "__main__":
