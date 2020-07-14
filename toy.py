@@ -121,8 +121,6 @@ def for_loop(net, mode=True):
     print(desc)
     # TODO
     # plot(embed, label, fig_path='results/baseline.png')
-    if mode:
-        lr_scheduler.step()
 
 
 def plot(embeds, labels, fig_path='./example.pdf'):
@@ -173,6 +171,7 @@ if __name__ == "__main__":
     for epoch in range(1, num_epochs + 1):
         # train
         for_loop(model, True)
+        lr_scheduler.step()
         # test
         for_loop(model, False)
         # save database and model
