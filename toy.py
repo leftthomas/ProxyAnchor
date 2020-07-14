@@ -23,24 +23,24 @@ from utils import LabelSmoothingCrossEntropyLoss, recall, obtain_density
 # torch.backends.cudnn.benchmark = False
 
 
-# use the first 5 classes as train classes, and the remaining classes as novel test classes
+# use the first 7 classes as train classes, and the remaining classes as novel test classes
 class FashionMNIST(datasets.FashionMNIST):
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         if train:
-            self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat']
+            self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt']
         else:
-            self.classes = ['Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+            self.classes = ['Sneaker', 'Bag', 'Ankle boot']
         super().__init__(root, train, transform, target_transform, download)
         datas, targets = [], []
         for data, target in zip(self.data, self.targets):
             if train:
-                if target < 5:
+                if target < 7:
                     datas.append(data)
                     targets.append(target)
             else:
-                if target >= 5:
+                if target >= 7:
                     datas.append(data)
-                    targets.append(target - 5)
+                    targets.append(target - 7)
         self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
 
 
