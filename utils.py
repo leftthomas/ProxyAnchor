@@ -62,6 +62,19 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
     return acc_list
 
 
+def obtain_density(feature_vectors, feature_labels):
+    feature_dict = {}
+    for feature, label in zip(feature_vectors, feature_labels):
+        if label not in feature_dict:
+            feature_dict[label] = [feature]
+        else:
+            feature_dict[label].append(feature)
+    for key in list(feature_dict.keys()):
+        feature_dict[key] = (1 / torch.mean(
+            torch.std(torch.stack(feature_dict[key], dim=0), dim=0, unbiased=False))).cpu().item()
+    return feature_dict
+
+
 class LabelSmoothingCrossEntropyLoss(nn.Module):
     def __init__(self, smoothing=0.0, temperature=1.0):
         super().__init__()
