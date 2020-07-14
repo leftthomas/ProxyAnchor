@@ -108,7 +108,21 @@ def for_loop(net, mode=True):
         else:
             data_bar.set_description('generate embeds for test data...')
     embeds, outputs = torch.cat(embeds, dim=0), torch.cat(outputs, dim=0).cpu().numpy()
-    return embeds, outputs
+
+    acc_list = recall(embeds, outputs, [1])
+    desc = '{} Epoch {}/{} R@1:{:.2f}% '.format('Train' if mode else 'Test', epoch, num_epochs, acc_list[0] * 100)
+    density_list = obtain_density(embeds, outputs)
+    density_mean = 0.0
+    for key in sorted(list(density_list)):
+        desc += 'D@{}:{:.2f} '.format(key, density_list[key])
+        density_mean += density_list[key]
+    density_mean /= len(density_list)
+    desc += 'D@Mean:{:.2f} '.format(density_mean)
+    print(desc)
+    # TODO
+    # plot(embed, label, fig_path='results/baseline.png')
+    if mode:
+        lr_scheduler.step()
 
 
 def plot(embeds, labels, fig_path='./example.pdf'):
@@ -158,24 +172,8 @@ if __name__ == "__main__":
 
     for epoch in range(1, num_epochs + 1):
         # train
-        embed, label = for_loop(model, True)
-        acc_list = recall(embed, label, [1])
-        desc = 'Train Epoch {}/{} R@1:{:.2f}% '.format(epoch, num_epochs, acc_list[0] * 100)
-        density_list = obtain_density(embed, label)
-        for key in sorted(list(density_list)):
-            desc += 'D@{}:{:.2f}% '.format(key, density_list[key])
-        print(desc)
-        # plot(embed, label, fig_path='results/baseline.png')
-        lr_scheduler.step()
+        for_loop(model, True)
         # test
-        embed, label = for_loop(model, False)
-        acc_list = recall(embed, label, [1])
-        desc = 'Test Epoch {}/{} R@1:{:.2f}% '.format(epoch, num_epochs, acc_list[0] * 100)
-        density_list = obtain_density(embed, label)
-        for key in density_list:
-            desc += 'D@{}:{:.2f}% '.format(key, density_list[key])
-        print(desc)
-        # plot(embed, label, fig_path='results/baseline.png')
-
+        for_loop(model, False)
         # save database and model
         # TODO
