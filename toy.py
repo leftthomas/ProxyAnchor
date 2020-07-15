@@ -13,11 +13,11 @@ from torchvision import transforms, datasets
 from tqdm import tqdm
 
 from model import ProxyLinear
-from utils import LabelSmoothingCrossEntropyLoss, recall, obtain_density
+from utils import LabelSmoothingCrossEntropyLoss, recall, obtain_density, ProxyLoss
 
 
 # for reproducibility
-# torch.manual_seed(0)
+torch.manual_seed(0)
 # np.random.seed(0)
 # torch.backends.cudnn.deterministic = True
 # torch.backends.cudnn.benchmark = False
@@ -164,6 +164,7 @@ if __name__ == "__main__":
     optimizer = Adam(model.parameters(), lr=0.01)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 5, gamma=0.25)
     loss_criterion = LabelSmoothingCrossEntropyLoss(temperature=temperature)
+    proxy_loss_criterion = ProxyLoss()
 
     for epoch in range(1, num_epochs + 1):
         # train
