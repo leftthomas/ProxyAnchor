@@ -6,16 +6,15 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+import numpy as np
 from model import Model
-from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
-
+from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval, ProxyLoss
 
 # for reproducibility
-# torch.manual_seed(0)
-# np.random.seed(0)
-# torch.backends.cudnn.deterministic = True
-# torch.backends.cudnn.benchmark = False
+torch.manual_seed(0)
+np.random.seed(0)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 def train(net, optim):
@@ -26,7 +25,7 @@ def train(net, optim):
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
-        loss = loss_criterion(classes, labels)
+        loss = loss_criterion(classes, labels) + proxy_loss_criterion(net.fc.weight)
         optim.zero_grad()
         loss.backward()
         optim.step()
@@ -115,6 +114,7 @@ if __name__ == '__main__':
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
+    proxy_loss_criterion = ProxyLoss()
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
