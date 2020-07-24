@@ -9,6 +9,10 @@ A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature
 ```
 conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 ```
+- [PyTorch Metric Learning](https://kevinmusgrave.github.io/pytorch-metric-learning/)
+```
+conda install pytorch-metric-learning -c metric-learning -c pytorch
+```
 
 ## Datasets
 [CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [CUB200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html), 
