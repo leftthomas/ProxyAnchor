@@ -54,14 +54,14 @@ def test(net, recall_ids):
         test_features = torch.sign(eval_dict['test']['features'])
         # compute recall metric
         if data_name == 'isc':
-            dense_acc_list = recall(eval_dict['test']['features'], test_data_set.labels, recall_ids,
-                                    eval_dict['gallery']['features'], gallery_data_set.labels)
+            dense_acc_list = recall(eval_dict['test']['features'].cpu(), test_data_set.labels, recall_ids,
+                                    eval_dict['gallery']['features'].cpu(), gallery_data_set.labels)
             gallery_features = torch.sign(eval_dict['gallery']['features'])
-            binary_acc_list = recall(test_features, test_data_set.labels, recall_ids,
-                                     gallery_features, gallery_data_set.labels, binary=True)
+            binary_acc_list = recall(test_features.cpu(), test_data_set.labels, recall_ids,
+                                     gallery_features.cpu(), gallery_data_set.labels, binary=True)
         else:
-            dense_acc_list = recall(eval_dict['test']['features'], test_data_set.labels, recall_ids)
-            binary_acc_list = recall(test_features, test_data_set.labels, recall_ids, binary=True)
+            dense_acc_list = recall(eval_dict['test']['features'].cpu(), test_data_set.labels, recall_ids)
+            binary_acc_list = recall(test_features.cpu(), test_data_set.labels, recall_ids, binary=True)
     desc = 'Test Epoch {}/{} '.format(epoch, num_epochs)
     for index, rank_id in enumerate(recall_ids):
         desc += 'R@{}:{:.2f}%[{:.2f}%] '.format(rank_id, dense_acc_list[index] * 100, binary_acc_list[index] * 100)
@@ -80,7 +80,7 @@ if __name__ == '__main__':
                         choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
                         help='backbone network type, * means remove downsample of stage 4')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
-    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
+    parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), temperature != 1.0).cuda()
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)

@@ -31,7 +31,7 @@ optional arguments:
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
 --backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
 --feature_dim                 feature dim [default value is 512]
---temperature                 temperature scale used in temperature softmax [default value is 1.0]
+--temperature                 temperature scale used in temperature softmax [default value is 0.03]
 --smoothing                   smoothing value used in label smoothing [default value is 0.0]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 128]
@@ -43,7 +43,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_512_1.0_0.0_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_512_0.03_0.0_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

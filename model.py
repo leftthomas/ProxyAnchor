@@ -6,19 +6,15 @@ from resnet import resnet50, seresnet50
 
 
 class ProxyLinear(nn.Module):
-    def __init__(self, in_features, out_features, use_temperature=False):
+    def __init__(self, in_features, out_features):
         super(ProxyLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         # init proxy vector as unit random vector
         self.weight = nn.Parameter(torch.randn(out_features, in_features))
-        self.use_temperature = use_temperature
 
     def forward(self, x):
         normalized_weight = F.normalize(self.weight, dim=-1)
-        if not self.use_temperature:
-            std = torch.std(normalized_weight, dim=0, unbiased=False, keepdim=True)
-            normalized_weight = normalized_weight / std
         output = x.matmul(normalized_weight.t())
         return output
 
@@ -27,7 +23,7 @@ class ProxyLinear(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, use_temperature=False):
+    def __init__(self, backbone_type, feature_dim, num_classes):
         super().__init__()
 
         # Backbone Network
@@ -43,7 +39,7 @@ class Model(nn.Module):
         # Refactor Layer
         self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
         # Classification Layer
-        self.fc = ProxyLinear(feature_dim, num_classes, use_temperature)
+        self.fc = ProxyLinear(feature_dim, num_classes)
 
     def forward(self, x):
         features = torch.flatten(self.features(x), start_dim=1)
