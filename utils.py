@@ -87,12 +87,3 @@ class LabelSmoothingCrossEntropyLoss(nn.Module):
         smooth_loss = -log_probs.mean(dim=-1)
         loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
         return loss.mean()
-
-
-class ProxyLoss(nn.Module):
-    def forward(self, x):
-        x = F.normalize(x, dim=-1)
-        sim_matrix = torch.mm(x, x.t().contiguous())
-        sim_matrix.fill_diagonal_(-float('inf'))
-        loss, _ = sim_matrix.max(dim=-1)
-        return loss.mean()

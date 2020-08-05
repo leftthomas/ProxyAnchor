@@ -25,7 +25,7 @@ def train(net, optim):
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
-        loss = loss_criterion(classes, labels) + proxy_loss_criterion(net.fc.weight)
+        loss = loss_criterion(classes, labels)
         optim.zero_grad()
         loss.backward()
         optim.step()
@@ -114,7 +114,6 @@ if __name__ == '__main__':
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
-    proxy_loss_criterion = ProxyLoss()
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):

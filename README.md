@@ -1,5 +1,5 @@
-# AdaptiveNet
-A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature Scale for Image Retrieval]().
+# MovingProxies
+A PyTorch implementation of AdaptiveNet based on the paper [Image Retrieval with Moving Proxies]().
 
 ![Network Architecture](results/structure.png)
 
@@ -8,10 +8,6 @@ A PyTorch implementation of AdaptiveNet based on the paper [Adaptive Temperature
 - [PyTorch](https://pytorch.org)
 ```
 conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
-```
-- [PyTorch Metric Learning](https://kevinmusgrave.github.io/pytorch-metric-learning/)
-```
-conda install pytorch-metric-learning -c metric-learning -c pytorch
 ```
 
 ## Datasets
