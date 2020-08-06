@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 from model import Model
-from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval, ProxyLoss
+from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
 
 # for reproducibility
 torch.manual_seed(0)

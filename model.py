@@ -33,6 +33,8 @@ class Model(nn.Module):
         for name, module in backbone(pretrained=True, remove_downsample='*' in backbone_type).named_children():
             if isinstance(module, nn.Linear):
                 continue
+            if isinstance(module, nn.AdaptiveAvgPool2d):
+                module = nn.AdaptiveMaxPool2d(1)
             self.features.append(module)
         self.features = nn.Sequential(*self.features)
 
