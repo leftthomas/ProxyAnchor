@@ -6,12 +6,15 @@ from resnet import resnet50, seresnet50
 
 
 class ProxyLinear(nn.Module):
-    def __init__(self, in_features, out_features):
+    def __init__(self, in_features, out_features, with_learnable_proxy=False):
         super(ProxyLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         # init proxy vector as unit random vector
-        self.weight = nn.Parameter(torch.randn(out_features, in_features))
+        if with_learnable_proxy:
+            self.weight = nn.Parameter(torch.randn(out_features, in_features))
+        else:
+            self.register_buffer('weight', torch.randn(out_features, in_features))
 
     def forward(self, x):
         normalized_weight = F.normalize(self.weight, dim=-1)
@@ -23,7 +26,7 @@ class ProxyLinear(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes):
+    def __init__(self, backbone_type, feature_dim, num_classes, with_learnable_proxy=False):
         super().__init__()
 
         # Backbone Network
@@ -41,7 +44,7 @@ class Model(nn.Module):
         # Refactor Layer
         self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
         # Classification Layer
-        self.fc = ProxyLinear(feature_dim, num_classes)
+        self.fc = ProxyLinear(feature_dim, num_classes, with_learnable_proxy)
 
     def forward(self, x):
         features = torch.flatten(self.features(x), start_dim=1)
