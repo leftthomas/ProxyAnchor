@@ -7,6 +7,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
+import torch.nn.functional as F
 from model import Model
 from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
 
@@ -32,8 +33,10 @@ def train(net, optim):
 
         # update weight
         if not with_learnable_proxy:
-            updated_weight = net.fc.weight.index_select(0, labels) * (1.0 - momentum) + features.detach() * momentum
+            updated_weight = F.normalize(net.fc.weight, dim=-1).index_select(0, labels) * (1.0 - momentum)
             net.fc.weight.index_copy_(0, labels, updated_weight)
+            updated_feature = features.detach() * momentum
+            net.fc.weight.index_add_(0, labels, updated_feature)
 
         pred = torch.argmax(classes, dim=-1)
         total_loss += loss.item() * inputs.size(0)
