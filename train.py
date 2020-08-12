@@ -1,14 +1,16 @@
 import argparse
+
+import numpy as np
 import pandas as pd
 import torch
+import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import numpy as np
-import torch.nn.functional as F
+
 from model import Model
-from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval, BalancedBatchSampler
+from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
 
 # for reproducibility
 torch.manual_seed(0)

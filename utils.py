@@ -4,8 +4,6 @@ from PIL import Image
 from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torch.utils.data.sampler import Sampler
-import numpy as np
 
 
 class ImageReader(Dataset):
