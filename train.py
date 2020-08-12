@@ -112,8 +112,6 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train')
-    # train_sample = BalancedBatchSampler(train_data_set.labels, n_classes=batch_size // 4, n_samples=4)
-    # train_data_loader = DataLoader(train_data_set, batch_sampler=train_sample, num_workers=8)
     train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
     test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test')
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
