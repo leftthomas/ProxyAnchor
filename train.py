@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), with_learnable_proxy).cuda()
-    optimizer = Adam(model.parameters(), lr=4e-5)
+    optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
 
