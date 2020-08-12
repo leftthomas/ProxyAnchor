@@ -1,7 +1,5 @@
 import torch
-import torch.nn.functional as F
 from PIL import Image
-from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -74,17 +72,4 @@ def obtain_density(feature_vectors, feature_labels):
             torch.std(torch.stack(feature_dict[key], dim=0), dim=0, unbiased=False))).cpu().item()
     return feature_dict
 
-
-class LabelSmoothingCrossEntropyLoss(nn.Module):
-    def __init__(self, smoothing=0.0, temperature=1.0):
-        super().__init__()
-        self.smoothing = smoothing
-        self.temperature = temperature
-
-    def forward(self, x, target):
-        log_probs = F.log_softmax(x / self.temperature, dim=-1)
-        nll_loss = -log_probs.gather(dim=-1, index=target.unsqueeze(dim=-1)).squeeze(dim=-1)
-        smooth_loss = -log_probs.mean(dim=-1)
-        loss = (1.0 - self.smoothing) * nll_loss + self.smoothing * smooth_loss
-        return loss.mean()
 

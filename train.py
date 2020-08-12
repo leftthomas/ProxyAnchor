@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from torch import nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader, LabelSmoothingCrossEntropyLoss, set_bn_eval
+from utils import recall, ImageReader, set_bn_eval
 
 # for reproducibility
 torch.manual_seed(0)
@@ -27,7 +28,7 @@ def train(net, optim):
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
-        loss = loss_criterion(classes, labels)
+        loss = loss_criterion(classes / temperature, labels)
         optim.zero_grad()
         loss.backward()
         optim.step()
@@ -93,19 +94,17 @@ if __name__ == '__main__':
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
-    parser.add_argument('--smoothing', default=0.0, type=float, help='smoothing value used in label smoothing')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
-    parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
+    parser.add_argument('--num_epochs', default=30, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, feature_dim = opt.data_path, opt.data_name, opt.backbone_type, opt.feature_dim
-    temperature, momentum, smoothing, batch_size = opt.temperature, opt.momentum, opt.smoothing, opt.batch_size
-    num_epochs, with_learnable_proxy = opt.num_epochs, opt.with_learnable_proxy
-    recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
-                                                  smoothing, with_learnable_proxy)
+    temperature, momentum, batch_size, num_epochs = opt.temperature, opt.momentum, opt.batch_size, opt.num_epochs
+    with_learnable_proxy, recalls = opt.with_learnable_proxy, [int(k) for k in opt.recalls.split(',')]
+    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
+                                               with_learnable_proxy)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -127,7 +126,7 @@ if __name__ == '__main__':
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), with_learnable_proxy).cuda()
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
-    loss_criterion = LabelSmoothingCrossEntropyLoss(smoothing, temperature)
+    loss_criterion = nn.CrossEntropyLoss()
 
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
