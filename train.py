@@ -23,7 +23,7 @@ torch.backends.cudnn.benchmark = False
 def train(net, optim):
     net.train()
     # fix bn on backbone network
-    net.features.apply(set_bn_eval)
+    net.backbone.apply(set_bn_eval)
     total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
