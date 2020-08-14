@@ -1,8 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-
-from resnet import resnet50, seresnet50
+from torchvision.models import resnet50, inception_v3, googlenet
 
 
 class ProxyLinear(nn.Module):
@@ -30,24 +29,20 @@ class Model(nn.Module):
         super().__init__()
 
         # Backbone Network
-        backbones = {'resnet50': (resnet50, 4), 'seresnet50': (seresnet50, 4)}
-        backbone, expansion = backbones[backbone_type.replace('*', '')]
-        self.features = []
-        for name, module in backbone(pretrained=True, remove_downsample='*' in backbone_type).named_children():
-            if isinstance(module, nn.Linear):
-                continue
-            if isinstance(module, nn.AdaptiveAvgPool2d):
-                module = nn.AdaptiveMaxPool2d(1)
-            self.features.append(module)
-        self.features = nn.Sequential(*self.features)
+        backbones = {'resnet50': (resnet50, 2048), 'inception': (inception_v3, 2048), 'googlenet': (googlenet, 1024)}
+        backbone, middle_dim = backbones[backbone_type]
+        backbone = backbone(pretrained=True)
+        backbone.avgpool = nn.AdaptiveMaxPool2d(1)
+        backbone.fc = nn.Identity()
+        self.backbone = backbone
 
         # Refactor Layer
-        self.refactor = nn.Linear(512 * expansion, feature_dim, bias=False)
+        self.refactor = nn.Linear(middle_dim, feature_dim, bias=False)
         # Classification Layer
         self.fc = ProxyLinear(feature_dim, num_classes, with_learnable_proxy)
 
     def forward(self, x):
-        features = torch.flatten(self.features(x), start_dim=1)
+        features = self.backbone(x)
         global_feature = F.layer_norm(features, features.size()[1:])
         feature = F.normalize(self.refactor(global_feature), dim=-1)
         classes = self.fc(feature)

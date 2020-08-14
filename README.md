@@ -25,7 +25,7 @@ python train.py --feature_dim 1024
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub', 'sop', 'isc'])
---backbone_type               backbone network type, * means remove downsample of stage 4 [default value is 'resnet50'](choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'])
+--backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
 --feature_dim                 feature dim [default value is 512]
 --temperature                 temperature scale used in temperature softmax [default value is 0.03]
 --with_learnable_proxy        use learnable proxy or not [default value is False]

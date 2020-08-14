@@ -87,9 +87,8 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='/home/data', type=str, help='datasets path')
     parser.add_argument('--data_name', default='car', type=str, choices=['car', 'cub', 'sop', 'isc'],
                         help='dataset name')
-    parser.add_argument('--backbone_type', default='resnet50', type=str,
-                        choices=['resnet50', 'seresnet50', 'resnet50*', 'seresnet50*'],
-                        help='backbone network type, * means remove downsample of stage 4')
+    parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
+                        help='backbone network type')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
