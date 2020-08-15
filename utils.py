@@ -11,10 +11,10 @@ class ImageReader(Dataset):
         self.class_to_idx = dict(zip(sorted(data_dict), range(len(data_dict))))
         normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         if data_type == 'train':
-            self.transform = transforms.Compose([transforms.RandomResizedCrop((256, 256)),
+            self.transform = transforms.Compose([transforms.Resize((256, 256)), transforms.RandomCrop(224),
                                                  transforms.RandomHorizontalFlip(), transforms.ToTensor(), normalize])
         else:
-            self.transform = transforms.Compose([transforms.Resize((288, 288)), transforms.CenterCrop(256),
+            self.transform = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop(224),
                                                  transforms.ToTensor(), normalize])
         self.images, self.labels = [], []
         for label, image_list in data_dict.items():

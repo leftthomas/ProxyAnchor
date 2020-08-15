@@ -9,6 +9,10 @@ A PyTorch implementation of AdaptiveNet based on the paper [Image Retrieval with
 ```
 conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 ```
+- pretrainedmodels
+```
+pip install pretrainedmodels
+```
 
 ## Datasets
 [CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html), [CUB200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html), 

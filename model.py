@@ -1,7 +1,8 @@
 import torch
 import torch.nn.functional as F
+from pretrainedmodels import bninception
 from torch import nn
-from torchvision.models import resnet50, inception_v3, googlenet
+from torchvision.models import resnet50, googlenet
 
 
 class ProxyLinear(nn.Module):
@@ -29,11 +30,15 @@ class Model(nn.Module):
         super().__init__()
 
         # Backbone Network
-        backbones = {'resnet50': (resnet50, 2048), 'inception': (inception_v3, 2048), 'googlenet': (googlenet, 1024)}
+        backbones = {'resnet50': (resnet50, 2048), 'inception': (bninception, 1024), 'googlenet': (googlenet, 1024)}
         backbone, middle_dim = backbones[backbone_type]
-        backbone = backbone(pretrained=True)
-        backbone.avgpool = nn.AdaptiveMaxPool2d(1)
-        backbone.fc = nn.Identity()
+        backbone = backbone(pretrained='imagenet' if backbone_type == 'inception' else True)
+        if backbone_type == 'inception':
+            backbone.global_pool = nn.AdaptiveMaxPool2d(1)
+            backbone.last_linear = nn.Identity()
+        else:
+            backbone.avgpool = nn.AdaptiveMaxPool2d(1)
+            backbone.fc = nn.Identity()
         self.backbone = backbone
 
         # Refactor Layer
