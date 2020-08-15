@@ -4,18 +4,55 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
+class Identity(object):
+    def __call__(self, im):
+        return im
+
+
+class RGBToBGR(object):
+    def __call__(self, im):
+        assert im.mode == 'RGB'
+        r, g, b = [im.getchannel(i) for i in range(3)]
+        im = Image.merge('RGB', [b, g, r])
+        return im
+
+
+class ScaleIntensities(object):
+    def __init__(self, in_range, out_range):
+        """ Scales intensities. For example [-1, 1] -> [0, 255]."""
+        self.in_range = in_range
+        self.out_range = out_range
+
+    def __call__(self, tensor):
+        tensor = (tensor - self.in_range[0]) / (self.in_range[1] - self.in_range[0]) * (
+                self.out_range[1] - self.out_range[0]) + self.out_range[0]
+        return tensor
+
+
 class ImageReader(Dataset):
 
-    def __init__(self, data_path, data_name, data_type):
+    def __init__(self, data_path, data_name, data_type, backbone_type):
         data_dict = torch.load('{}/{}/uncropped_data_dicts.pth'.format(data_path, data_name))[data_type]
         self.class_to_idx = dict(zip(sorted(data_dict), range(len(data_dict))))
-        normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        if data_type == 'train':
-            self.transform = transforms.Compose([transforms.Resize((256, 256)), transforms.RandomCrop(224),
-                                                 transforms.RandomHorizontalFlip(), transforms.ToTensor(), normalize])
+        if backbone_type == 'inception':
+            normalize = transforms.Normalize([104, 117, 128], [1, 1, 1])
         else:
-            self.transform = transforms.Compose([transforms.Resize((256, 256)), transforms.CenterCrop(224),
-                                                 transforms.ToTensor(), normalize])
+            normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        if data_type == 'train':
+            self.transform = transforms.Compose([
+                RGBToBGR() if backbone_type == 'inception' else Identity(),
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                ScaleIntensities([0, 1], [0, 255]) if backbone_type == 'inception' else Identity(),
+                normalize])
+        else:
+            self.transform = transforms.Compose([
+                RGBToBGR() if backbone_type == 'inception' else Identity(),
+                transforms.Resize(256), transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                ScaleIntensities([0, 1], [0, 255]) if backbone_type == 'inception' else Identity(),
+                normalize])
         self.images, self.labels = [], []
         for label, image_list in data_dict.items():
             self.images += image_list
@@ -71,5 +108,3 @@ def obtain_density(feature_vectors, feature_labels):
         feature_dict[key] = (1 / torch.mean(
             torch.std(torch.stack(feature_dict[key], dim=0), dim=0, unbiased=False))).cpu().item()
     return feature_dict
-
-

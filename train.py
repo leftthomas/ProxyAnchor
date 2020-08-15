@@ -111,13 +111,13 @@ if __name__ == '__main__':
         results['test_binary_recall@{}'.format(recall_id)] = []
 
     # dataset loader
-    train_data_set = ImageReader(data_path, data_name, 'train')
+    train_data_set = ImageReader(data_path, data_name, 'train', backbone_type)
     train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
-    test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test')
+    test_data_set = ImageReader(data_path, data_name, 'query' if data_name == 'isc' else 'test', backbone_type)
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
     eval_dict = {'test': {'data_loader': test_data_loader}}
     if data_name == 'isc':
-        gallery_data_set = ImageReader(data_path, data_name, 'gallery')
+        gallery_data_set = ImageReader(data_path, data_name, 'gallery', backbone_type)
         gallery_data_loader = DataLoader(gallery_data_set, batch_size, shuffle=False, num_workers=8)
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
