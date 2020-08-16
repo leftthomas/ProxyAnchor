@@ -99,12 +99,16 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
 
 def obtain_density(feature_vectors, feature_labels):
     feature_dict = {}
+    feature_labels = torch.tensor(feature_labels, device=feature_vectors.device)
     for feature, label in zip(feature_vectors, feature_labels):
         if label not in feature_dict:
             feature_dict[label] = [feature]
         else:
             feature_dict[label].append(feature)
+    mean_density = 0.0
     for key in list(feature_dict.keys()):
-        feature_dict[key] = (1 / torch.mean(
+        feature_dict[key] = (1.0 / torch.mean(
             torch.std(torch.stack(feature_dict[key], dim=0), dim=0, unbiased=False))).cpu().item()
-    return feature_dict
+        mean_density += feature_dict[key]
+    mean_density /= len(feature_dict.keys())
+    return feature_dict, mean_density
