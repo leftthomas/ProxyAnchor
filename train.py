@@ -95,13 +95,14 @@ if __name__ == '__main__':
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
+    parser.add_argument('--lr', default=1e-4, type=float, help='learning rate')
     parser.add_argument('--num_epochs', default=30, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, feature_dim = opt.data_path, opt.data_name, opt.backbone_type, opt.feature_dim
     temperature, momentum, batch_size, num_epochs = opt.temperature, opt.momentum, opt.batch_size, opt.num_epochs
-    with_learnable_proxy, recalls = opt.with_learnable_proxy, [int(k) for k in opt.recalls.split(',')]
+    lr, with_learnable_proxy, recalls = opt.lr, opt.with_learnable_proxy, [int(k) for k in opt.recalls.split(',')]
     save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
                                                with_learnable_proxy)
 
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), with_learnable_proxy).cuda()
-    optimizer = Adam(model.parameters(), lr=1e-4)
+    optimizer = Adam(model.parameters(), lr=lr)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
 

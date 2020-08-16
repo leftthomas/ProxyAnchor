@@ -35,6 +35,7 @@ optional arguments:
 --with_learnable_proxy        use learnable proxy or not [default value is False]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 128]
+--lr                          learning rate [default value is 1e-4]
 --num_epochs                  training epoch number [default value is 30]
 ```
 
