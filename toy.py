@@ -22,16 +22,12 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-# use the first 7 classes as train classes, and the remaining classes as novel test classes
-class FashionMNIST(datasets.FashionMNIST):
+# use fold 0, the first 7 classes as train classes, and the remaining classes as novel test classes
+class STL10(datasets.STL10):
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
-        if train:
-            self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt']
-        else:
-            self.classes = ['Sneaker', 'Bag', 'Ankle boot']
-        super().__init__(root, train, transform, target_transform, download)
+        super().__init__(root, 'train' if train else 'test', 0, transform, target_transform, download)
         datas, targets = [], []
-        for data, target in zip(self.data, self.targets):
+        for data, target in zip(self.data, self.labels):
             if train:
                 if target < 7:
                     datas.append(data)
@@ -40,7 +36,11 @@ class FashionMNIST(datasets.FashionMNIST):
                 if target >= 7:
                     datas.append(data)
                     targets.append(target - 7)
-        self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
+        if train:
+            self.classes = self.classes[:7]
+        else:
+            self.classes = self.classes[7:]
+        self.data, self.labels = np.stack(datas, axis=0), np.stack(targets, axis=0)
 
 
 class ToyModel(nn.Module):
@@ -129,7 +129,7 @@ def plot(embeds, labels, fig_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run temperature scale experiments in FashionMNIST')
-    parser.add_argument('--data_path', default='/home/data/mnist', type=str, help='datasets path')
+    parser.add_argument('--data_path', default='/home/data/stl10', type=str, help='datasets path')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
@@ -140,14 +140,16 @@ if __name__ == "__main__":
     data_path, temperature, batch_size, num_epochs = args.data_path, args.temperature, args.batch_size, args.num_epochs
     with_learnable_proxy, momentum = args.with_learnable_proxy, args.momentum
     train_transform = transforms.Compose(
-        [transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
-    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
-    train_dataset = FashionMNIST(root=data_path, train=True, transform=train_transform, download=True)
+        [transforms.RandomHorizontalFlip(), transforms.ToTensor(),
+         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    test_transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    train_dataset = STL10(root=data_path, train=True, transform=train_transform, download=True)
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
-    test_dataset = FashionMNIST(root=data_path, train=False, transform=test_transform, download=True)
+    test_dataset = STL10(root=data_path, train=False, transform=test_transform, download=True)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    model = ToyModel(len(train_dataset.class_to_idx), with_learnable_proxy).cuda()
+    model = ToyModel(len(train_dataset.classes), with_learnable_proxy).cuda()
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
