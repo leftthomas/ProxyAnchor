@@ -1,12 +1,11 @@
 import argparse
-import random
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torch.optim import AdamW
+from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -15,10 +14,8 @@ from model import Model
 from utils import recall, ImageReader, set_bn_eval
 
 # for reproducibility
-random.seed(1)
-np.random.seed(1)
-torch.manual_seed(1)
-torch.cuda.manual_seed_all(1)
+np.random.seed(0)
+torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
@@ -98,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
-    parser.add_argument('--num_epochs', default=40, type=int, help='training epoch number')
+    parser.add_argument('--num_epochs', default=30, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
@@ -126,8 +123,8 @@ if __name__ == '__main__':
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), with_learnable_proxy).cuda()
-    optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
-    lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
+    optimizer = Adam(model.parameters(), lr=1e-4)
+    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
 
     best_recall = 0.0
