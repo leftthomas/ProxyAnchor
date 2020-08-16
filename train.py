@@ -112,7 +112,7 @@ if __name__ == '__main__':
     save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
                                                with_learnable_proxy)
 
-    results = {'train_loss': [], 'train_accuracy': []}
+    results = {'train_loss': [], 'train_accuracy': [], 'test_density': []}
     for recall_id in recalls:
         results['test_dense_recall@{}'.format(recall_id)] = []
         results['test_binary_recall@{}'.format(recall_id)] = []
@@ -140,7 +140,7 @@ if __name__ == '__main__':
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
         rank, mean_density = test(model, recalls)
-        results['mean_density'].append(mean_density)
+        results['test_density'].append(mean_density)
         lr_scheduler.step()
 
         # save statistics

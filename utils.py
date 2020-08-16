@@ -111,4 +111,4 @@ def obtain_density(feature_vectors, feature_labels):
             torch.std(torch.stack(feature_dict[key], dim=0), dim=0, unbiased=False))).cpu().item()
         mean_density += feature_dict[key]
     mean_density /= len(feature_dict.keys())
-    return feature_dict, mean_density
+    return feature_dict, mean_density.item()
