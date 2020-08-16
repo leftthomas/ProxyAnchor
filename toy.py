@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torchvision import transforms, datasets
 from tqdm import tqdm
-
+from torchvision.models import resnet18
 from model import ProxyLinear
 from utils import recall, obtain_density
 
@@ -46,38 +46,17 @@ class FashionMNIST(datasets.FashionMNIST):
 class ToyModel(nn.Module):
     def __init__(self, num_classes, with_learnable_proxy=False):
         super(ToyModel, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True))
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True))
-        self.layer5 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=8, stride=1))
+        backbone = resnet18(pretrained=True)
+        backbone.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        backbone.maxpool = nn.Identity()
+        backbone.avgpool = nn.AdaptiveMaxPool2d(1)
+        backbone.fc = nn.Identity()
+        self.backbone = backbone
         self.fc_projection = nn.Linear(512, 2)
         self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
 
     def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = torch.flatten(x, start_dim=1)
+        x = self.backbone(x)
         feature = F.normalize(self.fc_projection(x), dim=-1)
         classes = self.fc_final(feature)
         return feature, classes
@@ -167,8 +146,8 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
 
     model = ToyModel(len(train_dataset.class_to_idx), with_learnable_proxy).cuda()
-    optimizer = Adam(model.parameters(), lr=0.01)
-    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 5, gamma=0.25)
+    optimizer = Adam(model.parameters(), lr=1e-4)
+    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
 
     results = {'train_loss': [], 'train_accuracy': [], 'test_recall': [], 'test_density': []}
