@@ -71,21 +71,23 @@ def test(net, recall_ids):
             binary_acc_list = recall(test_features.cpu(), test_data_set.labels, recall_ids,
                                      gallery_features.cpu(), gallery_data_set.labels, binary=True)
             # compute density
-            _, test_density = obtain_density(eval_dict['test']['features'].cpu(), test_data_set.labels)
-            _, galley_density = obtain_density(eval_dict['gallery']['features'].cpu(), gallery_data_set.labels)
-            density = (test_density + galley_density) / 2
+            _, test_density, test_sparse = obtain_density(eval_dict['test']['features'].cpu(), test_data_set.labels)
+            _, galley_density, gallery_spare = obtain_density(eval_dict['gallery']['features'].cpu(),
+                                                              gallery_data_set.labels)
+            density, spare = (test_density + galley_density) / 2, (test_sparse + gallery_spare) / 2
         else:
             dense_acc_list = recall(eval_dict['test']['features'].cpu(), test_data_set.labels, recall_ids)
             binary_acc_list = recall(test_features.cpu(), test_data_set.labels, recall_ids, binary=True)
             # compute density
-            _, density = obtain_density(eval_dict['test']['features'].cpu(), test_data_set.labels)
+            _, density, spare = obtain_density(eval_dict['test']['features'].cpu(), test_data_set.labels)
     desc = 'Test Epoch {}/{} '.format(epoch, num_epochs)
     for index, rank_id in enumerate(recall_ids):
         desc += 'R@{}:{:.2f}%[{:.2f}%] '.format(rank_id, dense_acc_list[index] * 100, binary_acc_list[index] * 100)
         results['test_dense_recall@{}'.format(rank_id)].append(dense_acc_list[index] * 100)
         results['test_binary_recall@{}'.format(rank_id)].append(binary_acc_list[index] * 100)
+    desc += 'Density:{:.4f} Sparse:{:.4f}'.format(density, spare)
     print(desc)
-    return dense_acc_list[0], density
+    return dense_acc_list[0], density, spare
 
 
 if __name__ == '__main__':
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
                                                with_learnable_proxy)
 
-    results = {'train_loss': [], 'train_accuracy': [], 'test_density': []}
+    results = {'train_loss': [], 'train_accuracy': [], 'test_density': [], 'test_spare': []}
     for recall_id in recalls:
         results['test_dense_recall@{}'.format(recall_id)] = []
         results['test_binary_recall@{}'.format(recall_id)] = []
@@ -139,8 +141,9 @@ if __name__ == '__main__':
         train_loss, train_accuracy = train(model, optimizer)
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
-        rank, mean_density = test(model, recalls)
+        rank, mean_density, mean_spare = test(model, recalls)
         results['test_density'].append(mean_density)
+        results['test_spare'].append(mean_spare)
         lr_scheduler.step()
 
         # save statistics
