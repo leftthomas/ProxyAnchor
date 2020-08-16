@@ -96,6 +96,14 @@ def for_loop(net, mode=True):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            # update weight
+            if not with_learnable_proxy:
+                updated_weight = F.normalize(net.fc_final.weight, dim=-1).index_select(0, labels) * (1.0 - momentum)
+                net.fc_final.weight.index_copy_(0, labels, updated_weight)
+                updated_feature = features.detach() * momentum
+                net.fc_final.weight.index_add_(0, labels, updated_feature)
+
             pred = torch.argmax(classes, dim=-1)
             total_loss += loss.item() * inputs.size(0)
             total_correct += torch.sum(pred == labels).item()
@@ -143,12 +151,13 @@ if __name__ == "__main__":
     parser.add_argument('--data_path', default='/home/data/mnist', type=str, help='datasets path')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
+    parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--batch_size', type=int, default=128, help='training batch size')
     parser.add_argument('--num_epochs', type=int, default=30, help='training epoch number')
     args = parser.parse_args()
 
     data_path, temperature, batch_size, num_epochs = args.data_path, args.temperature, args.batch_size, args.num_epochs
-    with_learnable_proxy = args.with_learnable_proxy
+    with_learnable_proxy, momentum = args.with_learnable_proxy, args.momentum
     train_transform = transforms.Compose(
         [transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
     test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
@@ -174,12 +183,13 @@ if __name__ == "__main__":
         lr_scheduler.step()
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/toy_{}_statistics.csv'.format(with_learnable_proxy), index_label='epoch')
+        data_frame.to_csv('results/toy_{}_{}_statistics.csv'.format(momentum, with_learnable_proxy),
+                          index_label='epoch')
         # save model, embeds and plot embeds
         if rank > best_recall:
             best_recall = rank
-            torch.save(model.state_dict(), 'results/toy_{}_model.pth'.format(with_learnable_proxy))
-            torch.save(embeds_dict, 'results/toy_{}_embeds.pth'.format(with_learnable_proxy))
+            torch.save(model.state_dict(), 'results/toy_{}_{}_model.pth'.format(momentum, with_learnable_proxy))
+            torch.save(embeds_dict, 'results/toy_{}_{}_embeds.pth'.format(momentum, with_learnable_proxy))
             # TODO
             # plot(embeds.cpu().numpy(), outputs,
             #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
