@@ -1,5 +1,5 @@
 import argparse
-
+import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -107,15 +107,14 @@ def for_loop(net, mode=True):
             embeds.append(features.detach())
             outputs.append(labels)
             data_bar.set_description('generate embeds for test data...')
-    if not mode:
-        embeds, outputs = torch.cat(embeds, dim=0), torch.cat(outputs, dim=0).cpu().numpy()
+    if mode:
+        return total_loss / total_num, total_correct / total_num * 100
+    else:
+        embeds, outputs = torch.cat(embeds, dim=0).cpu(), torch.cat(outputs, dim=0).cpu().tolist()
         acc_list = recall(embeds, outputs, [1])
         density_list, density = obtain_density(embeds, outputs)
-        desc = 'Test Epoch {}/{} R@1:{:.2f}% Density:{:.4f}'.format(epoch, num_epochs, acc_list[0] * 100, density)
-        print(desc)
-        # TODO
-        # plot(embeds.cpu().numpy(), outputs,
-        #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
+        print('Test Epoch {}/{} R@1:{:.2f}% Density:{:.4f}'.format(epoch, num_epochs, acc_list[0] * 100, density))
+        return density_list, acc_list[0], density
 
 
 def plot(embeds, labels, fig_path):
@@ -163,11 +162,24 @@ if __name__ == "__main__":
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 5, gamma=0.25)
     loss_criterion = nn.CrossEntropyLoss()
 
+    results = {'train_loss': [], 'train_accuracy': [], 'test_recall': [], 'test_density': []}
+    best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
-        # train
-        for_loop(model, True)
+        train_loss, train_accuracy = for_loop(model, True)
+        results['train_loss'].append(train_loss)
+        results['train_accuracy'].append(train_accuracy)
+        embeds_dict, rank, mean_density = for_loop(model, False)
+        results['test_recall'].append(rank)
+        results['test_density'].append(mean_density)
         lr_scheduler.step()
-        # test
-        for_loop(model, False)
-        # save database and model
-        # TODO
+        # save statistics
+        data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
+        data_frame.to_csv('results/toy_{}_statistics.csv'.format(with_learnable_proxy), index_label='epoch')
+        # save model, embeds and plot embeds
+        if rank > best_recall:
+            best_recall = rank
+            torch.save(model.state_dict(), 'results/toy_{}_model.pth'.format(with_learnable_proxy))
+            torch.save(embeds_dict, 'results/toy_{}_embeds.pth'.format(with_learnable_proxy))
+            # TODO
+            # plot(embeds.cpu().numpy(), outputs,
+            #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
