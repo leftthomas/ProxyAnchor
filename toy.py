@@ -151,24 +151,25 @@ if __name__ == "__main__":
     loss_criterion = nn.CrossEntropyLoss()
 
     results = {'train_loss': [], 'train_accuracy': [], 'test_recall': [], 'test_density': []}
+    save_name_pre = '{}_{}_{}'.format(temperature, momentum, with_learnable_proxy)
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
         train_loss, train_accuracy = for_loop(model, True)
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
         embeds_dict, rank, mean_density = for_loop(model, False)
-        results['test_recall'].append(rank)
+        results['test_recall'].append(rank * 100)
         results['test_density'].append(mean_density)
         lr_scheduler.step()
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/toy_{}_{}_statistics.csv'.format(momentum, with_learnable_proxy),
+        data_frame.to_csv('results/toy_{}_statistics.csv'.format(save_name_pre),
                           index_label='epoch')
         # save model, embeds and plot embeds
         if rank > best_recall:
             best_recall = rank
-            torch.save(model.state_dict(), 'results/toy_{}_{}_model.pth'.format(momentum, with_learnable_proxy))
-            torch.save(embeds_dict, 'results/toy_{}_{}_embeds.pth'.format(momentum, with_learnable_proxy))
+            torch.save(model.state_dict(), 'results/toy_{}_model.pth'.format(save_name_pre))
+            torch.save(embeds_dict, 'results/toy_{}_embeds.pth'.format(save_name_pre))
             # TODO
             # plot(embeds.cpu().numpy(), outputs,
             #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
