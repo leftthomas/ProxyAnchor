@@ -13,7 +13,7 @@ from torchvision import transforms, datasets
 from tqdm import tqdm
 from torchvision.models import resnet18
 from model import ProxyLinear
-from utils import recall, obtain_density
+from utils import recall, obtain_density, set_bn_eval
 
 # for reproducibility
 np.random.seed(0)
@@ -47,13 +47,12 @@ class ToyModel(nn.Module):
     def __init__(self, num_classes, with_learnable_proxy=False):
         super(ToyModel, self).__init__()
         backbone = resnet18(pretrained=True)
-        backbone.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
         backbone.maxpool = nn.Identity()
         backbone.avgpool = nn.AdaptiveMaxPool2d(1)
         backbone.fc = nn.Identity()
         self.backbone = backbone
-        self.fc_projection = nn.Linear(512, 2)
-        self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
+        self.fc_projection = nn.Linear(512, 3)
+        self.fc_final = ProxyLinear(3, num_classes, with_learnable_proxy)
 
     def forward(self, x):
         x = self.backbone(x)
@@ -64,6 +63,9 @@ class ToyModel(nn.Module):
 
 def for_loop(net, mode=True):
     net.train(mode)
+    if mode:
+        # fix bn on backbone network
+        net.backbone.apply(set_bn_eval)
     data_bar = tqdm(train_loader if mode else test_loader, dynamic_ncols=True)
     total_loss, total_correct, total_num = 0.0, 0.0, 0
     embeds, outputs = [], []
@@ -171,5 +173,4 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), 'results/toy_{}_model.pth'.format(save_name_pre))
             torch.save(embeds_dict, 'results/toy_{}_embeds.pth'.format(save_name_pre))
             # TODO
-            # plot(embeds.cpu().numpy(), outputs,
-            #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
+            # plot(embeds_dict, fig_path='results/{}_plot.png'.format(save_name_pre))
