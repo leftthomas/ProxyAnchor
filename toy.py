@@ -13,15 +13,13 @@ from torchvision import transforms, datasets
 from tqdm import tqdm
 
 from model import ProxyLinear
-from utils import LabelSmoothingCrossEntropyLoss, recall, obtain_density, ProxyLoss
+from utils import recall, obtain_density
 
 # for reproducibility
+np.random.seed(0)
 torch.manual_seed(0)
-
-
-# np.random.seed(0)
-# torch.backends.cudnn.deterministic = True
-# torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 # use the first 7 classes as train classes, and the remaining classes as novel test classes
@@ -46,7 +44,7 @@ class FashionMNIST(datasets.FashionMNIST):
 
 
 class ToyModel(nn.Module):
-    def __init__(self, num_classes, use_temperature=False):
+    def __init__(self, num_classes, with_learnable_proxy=False):
         super(ToyModel, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=0, bias=False),
@@ -70,8 +68,8 @@ class ToyModel(nn.Module):
             nn.BatchNorm2d(512),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=8, stride=1))
-        self.fc_projection = nn.Linear(512, 3)
-        self.fc_final = ProxyLinear(3, num_classes, use_temperature)
+        self.fc_projection = nn.Linear(512, 2)
+        self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
 
     def forward(self, x):
         x = self.layer1(x)
@@ -93,8 +91,6 @@ def for_loop(net, mode=True):
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
-        embeds.append(features.detach())
-        outputs.append(labels)
         if mode:
             loss = loss_criterion(classes, labels)
             optimizer.zero_grad()
@@ -108,21 +104,18 @@ def for_loop(net, mode=True):
                                      .format(epoch, num_epochs, total_loss / total_num,
                                              total_correct / total_num * 100))
         else:
+            embeds.append(features.detach())
+            outputs.append(labels)
             data_bar.set_description('generate embeds for test data...')
-    embeds, outputs = torch.cat(embeds, dim=0), torch.cat(outputs, dim=0).cpu().numpy()
-
-    acc_list = recall(embeds, outputs, [1])
-    desc = '{} Epoch {}/{} R@1:{:.2f}% '.format('Train' if mode else 'Test', epoch, num_epochs, acc_list[0] * 100)
-    density_list = obtain_density(embeds, outputs)
-    density_mean = 0.0
-    for key in sorted(list(density_list)):
-        desc += 'D@{}:{:.2f} '.format(key, density_list[key])
-        density_mean += density_list[key]
-    density_mean /= len(density_list)
-    desc += 'D@Mean:{:.2f} '.format(density_mean)
-    print(desc)
-    plot(embeds.cpu().numpy(), outputs,
-         fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
+    if not mode:
+        embeds, outputs = torch.cat(embeds, dim=0), torch.cat(outputs, dim=0).cpu().numpy()
+        acc_list = recall(embeds, outputs, [1])
+        density_list, density = obtain_density(embeds, outputs)
+        desc = 'Test Epoch {}/{} R@1:{:.2f}% Density:{:.4f}'.format(epoch, num_epochs, acc_list[0] * 100, density)
+        print(desc)
+        # TODO
+        # plot(embeds.cpu().numpy(), outputs,
+        #      fig_path='results/{}_{}_{}.png'.format('Train' if mode else 'Test', epoch, temperature))
 
 
 def plot(embeds, labels, fig_path):
@@ -149,23 +142,26 @@ def plot(embeds, labels, fig_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run temperature scale experiments in FashionMNIST')
     parser.add_argument('--data_path', default='/home/data/mnist', type=str, help='datasets path')
-    parser.add_argument('--temperature', default=1.0, type=float, help='temperature scale used in temperature softmax')
-    parser.add_argument('--batch_size', type=int, default=512, help='training batch size')
-    parser.add_argument('--num_epochs', type=int, default=40, help='training epoch number')
+    parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
+    parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
+    parser.add_argument('--batch_size', type=int, default=128, help='training batch size')
+    parser.add_argument('--num_epochs', type=int, default=30, help='training epoch number')
     args = parser.parse_args()
 
     data_path, temperature, batch_size, num_epochs = args.data_path, args.temperature, args.batch_size, args.num_epochs
-    data_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
-    train_ds = FashionMNIST(root=data_path, train=True, transform=data_transform, download=True)
-    train_loader = DataLoader(dataset=train_ds, batch_size=batch_size, shuffle=True, num_workers=8)
-    test_ds = FashionMNIST(root=data_path, train=False, transform=data_transform, download=True)
-    test_loader = DataLoader(dataset=test_ds, batch_size=batch_size, shuffle=False, num_workers=8)
+    with_learnable_proxy = args.with_learnable_proxy
+    train_transform = transforms.Compose(
+        [transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
+    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
+    train_dataset = FashionMNIST(root=data_path, train=True, transform=train_transform, download=True)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
+    test_dataset = FashionMNIST(root=data_path, train=False, transform=test_transform, download=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    model = ToyModel(len(train_ds.class_to_idx), temperature != 1.0).cuda()
+    model = ToyModel(len(train_dataset.class_to_idx), with_learnable_proxy).cuda()
     optimizer = Adam(model.parameters(), lr=0.01)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 5, gamma=0.25)
-    loss_criterion = LabelSmoothingCrossEntropyLoss(temperature=temperature)
-    proxy_loss_criterion = ProxyLoss()
+    loss_criterion = nn.CrossEntropyLoss()
 
     for epoch in range(1, num_epochs + 1):
         # train
