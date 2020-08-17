@@ -1,7 +1,6 @@
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,7 +21,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-# use the first 7 classes as train classes, and the remaining classes as novel test classes
+# use the first 7 classes as train classes, and the remaining classes as novel test classes (<=30 samples each class)
 class FashionMNIST(datasets.FashionMNIST):
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         if train:
@@ -31,6 +30,8 @@ class FashionMNIST(datasets.FashionMNIST):
             self.classes = ['Sneaker', 'Bag', 'Ankle boot']
         super().__init__(root, train, transform, target_transform, download)
         datas, targets = [], []
+        if not train:
+            counts = [0, 0, 0]
         for data, target in zip(self.data, self.targets):
             if train:
                 if target < 7:
@@ -38,8 +39,12 @@ class FashionMNIST(datasets.FashionMNIST):
                     targets.append(target)
             else:
                 if target >= 7:
-                    datas.append(data)
-                    targets.append(target - 7)
+                    if counts[target - 7] >= 30:
+                        continue
+                    else:
+                        counts[target - 7] += 1
+                        datas.append(data)
+                        targets.append(target - 7)
         self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
 
 
@@ -52,8 +57,8 @@ class ToyModel(nn.Module):
         backbone.avgpool = nn.AdaptiveMaxPool2d(1)
         backbone.fc = nn.Identity()
         self.backbone = backbone
-        self.fc_projection = nn.Linear(512, 3)
-        self.fc_final = ProxyLinear(3, num_classes, with_learnable_proxy)
+        self.fc_projection = nn.Linear(512, 2)
+        self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
 
     def forward(self, x):
         x = self.backbone(x)
@@ -107,25 +112,16 @@ def for_loop(net, mode=True):
         return density_list, acc_list[0], density
 
 
-def plot(embeds, labels, fig_path):
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-
-    # create a sphere
-    r, pi, cos, sin = 1, np.pi, np.cos, np.sin
-    phi, theta = np.mgrid[0.0:pi:100j, 0.0:2.0 * pi:100j]
-    x = r * sin(phi) * cos(theta)
-    y = r * sin(phi) * sin(theta)
-    z = r * cos(phi)
-    ax.plot_surface(x, y, z, rstride=1, cstride=1, color='w', alpha=0.3, linewidth=0)
-    ax.scatter(embeds[:, 0], embeds[:, 1], embeds[:, 2], c=labels, s=20)
-
-    ax.set_xlim([-1, 1])
-    ax.set_ylim([-1, 1])
-    ax.set_zlim([-1, 1])
-    plt.tight_layout()
+def plot(embeds, fig_path):
+    labels = list(embeds.keys())
+    assert len(labels) == 3
+    for label, color, marker in zip(labels, ['r', 'k', 'b'], ['o', '*', '^']):
+        embed = torch.stack(embeds[label], dim=0)
+        cluster = F.normalize(embed.mean(dim=0), dim=-1)
+        plt.plot([0, cluster.numpy()[0]], [0, cluster.numpy()[1]], color=color)
+        plt.scatter(embed.numpy()[:, 0], embed.numpy()[:, 1], s=5, c=color, marker=marker)
     plt.savefig(fig_path)
-    plt.close(fig)
+    plt.close()
 
 
 if __name__ == "__main__":
@@ -173,5 +169,4 @@ if __name__ == "__main__":
             best_recall = rank
             torch.save(model.state_dict(), 'results/toy_{}_model.pth'.format(save_name_pre))
             torch.save(embeds_dict, 'results/toy_{}_embeds.pth'.format(save_name_pre))
-            # TODO
-            # plot(embeds_dict, fig_path='results/{}_plot.png'.format(save_name_pre))
+            plot(embeds_dict, fig_path='results/{}_plot.pdf'.format(save_name_pre))
