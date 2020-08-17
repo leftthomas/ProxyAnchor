@@ -35,9 +35,10 @@ def train(net, optim):
 
         # update weight
         if not with_learnable_proxy:
-            updated_weight = F.normalize(net.fc.weight, dim=-1).index_select(0, labels) * (1.0 - momentum)
+            updated_weight = F.normalize(net.fc.weight.clone().detach(), dim=-1).index_select(0, labels) * (
+                        1.0 - momentum)
             net.fc.weight.index_copy_(0, labels, updated_weight)
-            updated_feature = features.detach() * momentum
+            updated_feature = features.clone().detach().detach() * momentum
             net.fc.weight.index_add_(0, labels, updated_feature)
 
         pred = torch.argmax(classes, dim=-1)
