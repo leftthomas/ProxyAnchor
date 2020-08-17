@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
-from torchvision import transforms, datasets
+from torchvision import transforms
 from tqdm import tqdm
-from utils import recall, set_bn_eval
+from utils import recall, set_bn_eval, STL10
 from model import ToyModel
 
 # for reproducibility
@@ -18,36 +18,6 @@ np.random.seed(0)
 torch.manual_seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
-
-# use the first 7 classes as train classes, and the remaining classes as novel test classes (<=60 samples each class)
-class FashionMNIST(datasets.FashionMNIST):
-    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
-        if train:
-            self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt']
-        else:
-            self.classes = ['Sneaker', 'Bag', 'Ankle boot']
-        super().__init__(root, train, transform, target_transform, download)
-        datas, targets = [], []
-        counts = [0 for _ in range(len(self.classes))]
-        for data, target in zip(self.data, self.targets):
-            if train:
-                if target < 7:
-                    if counts[target] >= 60:
-                        continue
-                    else:
-                        counts[target] += 1
-                        datas.append(data)
-                        targets.append(target)
-            else:
-                if target >= 7:
-                    if counts[target - 7] >= 60:
-                        continue
-                    else:
-                        counts[target - 7] += 1
-                        datas.append(data)
-                        targets.append(target - 7)
-        self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
 
 
 def for_loop(net, mode=True):
@@ -131,12 +101,12 @@ if __name__ == "__main__":
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     test_transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-    train_dataset = FashionMNIST(root=data_path, train=True, transform=train_transform, download=True)
+    train_dataset = STL10(root=data_path, train=True, transform=train_transform, download=True)
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
-    test_dataset = FashionMNIST(root=data_path, train=False, transform=test_transform, download=True)
+    test_dataset = STL10(root=data_path, train=False, transform=test_transform, download=True)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    model = ToyModel(len(train_dataset.class_to_idx), with_learnable_proxy).cuda()
+    model = ToyModel(len(train_dataset.classes), with_learnable_proxy).cuda()
     optimizer = Adam(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()

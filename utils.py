@@ -1,7 +1,8 @@
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms
+from torchvision import transforms, datasets
+import numpy as np
 
 
 class Identity(object):
@@ -97,3 +98,27 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
     return acc_list
 
 
+# use fold 0, the first 7 classes as train classes, and the remaining classes as novel test classes
+# <=60 samples for each test class, only used for toy example
+class STL10(datasets.STL10):
+    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
+        super().__init__(root, 'train' if train else 'test', 0, transform, target_transform, download)
+        datas, targets, counts = [], [], [0, 0, 0]
+        for data, target in zip(self.data, self.labels):
+            if train:
+                if target < 7:
+                    datas.append(data)
+                    targets.append(target)
+            else:
+                if target >= 7:
+                    if counts[target - 7] >= 60:
+                        continue
+                    else:
+                        counts[target - 7] += 1
+                        datas.append(data)
+                        targets.append(target - 7)
+        if train:
+            self.classes = self.classes[:7]
+        else:
+            self.classes = self.classes[7:]
+        self.data, self.labels = np.stack(datas, axis=0), np.stack(targets, axis=0)
