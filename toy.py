@@ -10,9 +10,8 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torchvision import transforms, datasets
 from tqdm import tqdm
-from torchvision.models import resnet18
-from model import ProxyLinear
-from utils import recall, obtain_density, set_bn_eval
+from utils import recall, set_bn_eval
+from model import ToyModel
 
 # for reproducibility
 np.random.seed(0)
@@ -51,33 +50,13 @@ class FashionMNIST(datasets.FashionMNIST):
         self.data, self.targets = torch.stack(datas, dim=0), torch.stack(targets, dim=0)
 
 
-class ToyModel(nn.Module):
-    def __init__(self, num_classes, with_learnable_proxy=False):
-        super(ToyModel, self).__init__()
-        backbone = resnet18(pretrained=True)
-        backbone.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        backbone.maxpool = nn.Identity()
-        backbone.avgpool = nn.AdaptiveMaxPool2d(1)
-        backbone.fc = nn.Identity()
-        self.backbone = backbone
-        self.fc_projection = nn.Linear(512, 2)
-        self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
-
-    def forward(self, x):
-        x = self.backbone(x)
-        feature = F.normalize(self.fc_projection(x), dim=-1)
-        classes = self.fc_final(feature)
-        return feature, classes
-
-
 def for_loop(net, mode=True):
     net.train(mode)
     if mode:
         # fix bn on backbone network
         net.backbone.apply(set_bn_eval)
     data_bar = tqdm(train_loader if mode else test_loader, dynamic_ncols=True)
-    total_loss, total_correct, total_num = 0.0, 0.0, 0
-    embeds, outputs = [], []
+    total_loss, total_correct, total_num, embeds, outputs = 0.0, 0.0, 0, [], []
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
@@ -108,11 +87,16 @@ def for_loop(net, mode=True):
     if mode:
         return total_loss / total_num, total_correct / total_num * 100
     else:
-        embeds, outputs = torch.cat(embeds, dim=0).cpu(), torch.cat(outputs, dim=0).cpu().tolist()
+        embeds, outputs, feature_dict = torch.cat(embeds, dim=0).cpu(), torch.cat(outputs, dim=0).cpu().tolist(), {}
         acc_list = recall(embeds, outputs, [1])
-        density_list, density = obtain_density(embeds, outputs)
-        print('Test Epoch {}/{} R@1:{:.2f}% Density:{:.4f}'.format(epoch, num_epochs, acc_list[0] * 100, density))
-        return density_list, acc_list[0], density
+        print('Test Epoch {}/{} R@1:{:.2f}%'.format(epoch, num_epochs, acc_list[0] * 100))
+        for feature, label in zip(embeds, outputs):
+            if label not in feature_dict:
+                feature_dict[label] = [feature]
+            else:
+                feature_dict[label].append(feature)
+
+        return feature_dict, acc_list[0]
 
 
 def plot(embeds, fig_path):
@@ -131,8 +115,8 @@ def plot(embeds, fig_path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run temperature scale experiments in FashionMNIST')
-    parser.add_argument('--data_path', default='/home/data/mnist', type=str, help='datasets path')
+    parser = argparse.ArgumentParser(description='Run toy experiments in STL10 dataset')
+    parser.add_argument('--data_path', default='/home/data/stl10', type=str, help='datasets path')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
@@ -143,8 +127,10 @@ if __name__ == "__main__":
     data_path, temperature, batch_size, num_epochs = args.data_path, args.temperature, args.batch_size, args.num_epochs
     with_learnable_proxy, momentum = args.with_learnable_proxy, args.momentum
     train_transform = transforms.Compose(
-        [transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
-    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.1307,), std=(0.3081,))])
+        [transforms.RandomHorizontalFlip(), transforms.ToTensor(),
+         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    test_transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     train_dataset = FashionMNIST(root=data_path, train=True, transform=train_transform, download=True)
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
     test_dataset = FashionMNIST(root=data_path, train=False, transform=test_transform, download=True)
@@ -155,21 +141,19 @@ if __name__ == "__main__":
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
 
-    results = {'train_loss': [], 'train_accuracy': [], 'test_recall': [], 'test_density': []}
+    results = {'train_loss': [], 'train_accuracy': [], 'test_recall': []}
     save_name_pre = '{}_{}_{}'.format(temperature, momentum, with_learnable_proxy)
     best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
         train_loss, train_accuracy = for_loop(model, True)
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
-        embeds_dict, rank, mean_density = for_loop(model, False)
+        embeds_dict, rank = for_loop(model, False)
         results['test_recall'].append(rank * 100)
-        results['test_density'].append(mean_density)
         lr_scheduler.step()
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/toy_{}_statistics.csv'.format(save_name_pre),
-                          index_label='epoch')
+        data_frame.to_csv('results/toy_{}_statistics.csv'.format(save_name_pre), index_label='epoch')
         # save model, embeds and plot embeds
         if rank > best_recall:
             best_recall = rank

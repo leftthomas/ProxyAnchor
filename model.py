@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from pretrainedmodels import bninception
 from torch import nn
-from torchvision.models import resnet50, googlenet
+from torchvision.models import resnet50, googlenet, resnet18
 
 
 class ProxyLinear(nn.Module):
@@ -51,4 +51,22 @@ class Model(nn.Module):
         global_feature = F.layer_norm(features, features.size()[1:])
         feature = F.normalize(self.refactor(global_feature), dim=-1)
         classes = self.fc(feature)
+        return feature, classes
+
+
+class ToyModel(nn.Module):
+    def __init__(self, num_classes, with_learnable_proxy=False):
+        super(ToyModel, self).__init__()
+        backbone = resnet18(pretrained=True)
+        backbone.maxpool = nn.Identity()
+        backbone.avgpool = nn.AdaptiveMaxPool2d(1)
+        backbone.fc = nn.Identity()
+        self.backbone = backbone
+        self.fc_projection = nn.Linear(512, 2)
+        self.fc_final = ProxyLinear(2, num_classes, with_learnable_proxy)
+
+    def forward(self, x):
+        x = self.backbone(x)
+        feature = F.normalize(self.fc_projection(x), dim=-1)
+        classes = self.fc_final(feature)
         return feature, classes
