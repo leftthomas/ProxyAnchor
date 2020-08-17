@@ -30,13 +30,16 @@ class FashionMNIST(datasets.FashionMNIST):
             self.classes = ['Sneaker', 'Bag', 'Ankle boot']
         super().__init__(root, train, transform, target_transform, download)
         datas, targets = [], []
-        if not train:
-            counts = [0, 0, 0]
+        counts = [0 for _ in range(len(self.classes))]
         for data, target in zip(self.data, self.targets):
             if train:
                 if target < 7:
-                    datas.append(data)
-                    targets.append(target)
+                    if counts[target] >= 30:
+                        continue
+                    else:
+                        counts[target] += 1
+                        datas.append(data)
+                        targets.append(target)
             else:
                 if target >= 7:
                     if counts[target - 7] >= 30:
@@ -115,7 +118,7 @@ def for_loop(net, mode=True):
 def plot(embeds, fig_path):
     labels = list(embeds.keys())
     assert len(labels) == 3
-    for label, color, marker in zip(labels, ['r', 'k', 'b'], ['o', '*', '^']):
+    for label, color, marker in zip(labels, ['r', 'g', 'b'], ['o', '*', '^']):
         embed = torch.stack(embeds[label], dim=0)
         cluster = F.normalize(embed.mean(dim=0), dim=-1)
         plt.plot([0, cluster.numpy()[0]], [0, cluster.numpy()[1]], color=color)
