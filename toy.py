@@ -123,6 +123,9 @@ def plot(embeds, fig_path):
         cluster = F.normalize(embed.mean(dim=0), dim=-1)
         plt.plot([0, cluster.numpy()[0]], [0, cluster.numpy()[1]], color=color)
         plt.scatter(embed.numpy()[:, 0], embed.numpy()[:, 1], s=5, c=color, marker=marker)
+    plt.xlim([-1.2, 1.2])
+    plt.ylim([-1.2, 1.2])
+    plt.tight_layout()
     plt.savefig(fig_path)
     plt.close()
 
