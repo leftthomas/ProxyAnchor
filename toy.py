@@ -21,7 +21,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-# use the first 7 classes as train classes, and the remaining classes as novel test classes (<=30 samples each class)
+# use the first 7 classes as train classes, and the remaining classes as novel test classes (<=60 samples each class)
 class FashionMNIST(datasets.FashionMNIST):
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         if train:
@@ -34,7 +34,7 @@ class FashionMNIST(datasets.FashionMNIST):
         for data, target in zip(self.data, self.targets):
             if train:
                 if target < 7:
-                    if counts[target] >= 30:
+                    if counts[target] >= 60:
                         continue
                     else:
                         counts[target] += 1
@@ -42,7 +42,7 @@ class FashionMNIST(datasets.FashionMNIST):
                         targets.append(target)
             else:
                 if target >= 7:
-                    if counts[target - 7] >= 30:
+                    if counts[target - 7] >= 60:
                         continue
                     else:
                         counts[target - 7] += 1
@@ -82,7 +82,7 @@ def for_loop(net, mode=True):
         inputs, labels = inputs.cuda(), labels.cuda()
         features, classes = net(inputs)
         if mode:
-            loss = loss_criterion(classes, labels)
+            loss = loss_criterion(classes / temperature, labels)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
