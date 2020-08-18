@@ -1,5 +1,5 @@
-# MovingProxies
-A PyTorch implementation of AdaptiveNet based on the paper [Image Retrieval with Moving Proxies]().
+# AsymptoticProxy
+A PyTorch implementation of Asymptotic Proxy based on the paper [Asymptotic proxy for deep metric learning]().
 
 ![Network Architecture](results/structure.png)
 
@@ -32,7 +32,7 @@ optional arguments:
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
 --feature_dim                 feature dim [default value is 512]
 --temperature                 temperature scale used in temperature softmax [default value is 0.03]
---with_learnable_proxy        use learnable proxy or not [default value is False]
+--momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 128]
 --lr                          learning rate [default value is 1e-4]
@@ -44,12 +44,25 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_512_0.03_0.5_False_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_512_0.03_0.5_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
+### Toy Example
+```
+python toy.py --with_learnable_proxy
+optional arguments:
+--data_path                   dataset path [default value is '/home/data/stl10']
+--temperature                 temperature scale used in temperature softmax [default value is 0.03]
+--with_learnable_proxy        use learnable proxy or not [default value is False]
+--momentum                    momentum used for the update of moving proxies [default value is 0.5]
+--batch_size                  training batch size [default value is 128]
+--num_epochs                  training epoch number [default value is 30]
+```
+
 ## Benchmarks
-The models are trained on one NVIDIA Tesla V100 (32G) GPU.
+The models are trained on one NVIDIA Tesla V100 (32G) GPU. `temperature` is `0.03` for `CARS196` and `CUB200` datasets, 
+`0.05` for `SOP` and `In-shop` datasets. `lr` is `1e-4` for `CARS196` and `CUB200` datasets, `4e-5` for `SOP` and `In-shop` datasets.
 
 ### CARS196 (Dense | Binary)
 <table>
@@ -73,7 +86,15 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
       <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
     </tr>
     <tr>
-      <td align="center">SEResNet50</td>
+      <td align="center">BNInception</td>
+      <td align="center">85.2% | 90.6%</td>
+      <td align="center">91.6% | 94.6%</td>
+      <td align="center">95.2% | 96.9%</td>
+      <td align="center">97.3% | 98.2%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
+    </tr>
+    <tr>
+      <td align="center">GoogleNet</td>
       <td align="center">85.2% | 90.6%</td>
       <td align="center">91.6% | 94.6%</td>
       <td align="center">95.2% | 96.9%</td>
@@ -105,7 +126,15 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
       <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
     </tr>
     <tr>
-      <td align="center">SEResNet50</td>
+      <td align="center">BNInception</td>
+      <td align="center">62.7% | 66.8%</td>
+      <td align="center">74.4% | 78.7%</td>
+      <td align="center">82.8% | 87.2%</td>
+      <td align="center">90.0% | 92.7%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+    </tr>
+    <tr>
+      <td align="center">GoogleNet</td>
       <td align="center">62.7% | 66.8%</td>
       <td align="center">74.4% | 78.7%</td>
       <td align="center">82.8% | 87.2%</td>
@@ -130,19 +159,27 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
   <tbody>
     <tr>
       <td align="center">ResNet50</td>
-      <td align="center">78.7%</td>
-      <td align="center">91.1%</td>
-      <td align="center">96.5%</td>
-      <td align="center">98.9%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1izrEJUTHgB7Yafa6d938MA">3qr7</a></td>
+      <td align="center">64.1% | 68.4%</td>
+      <td align="center">75.4% | 79.9%</td>
+      <td align="center">83.6% | 87.6%</td>
+      <td align="center">90.6% | 92.9%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
     </tr>
     <tr>
-      <td align="center">SEResNet50</td>
-      <td align="center">77.8%</td>
-      <td align="center">90.7%</td>
-      <td align="center">96.3%</td>
-      <td align="center">98.8%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1izrEJUTHgB7Yafa6d938MA">3qr7</a></td>
+      <td align="center">BNInception</td>
+      <td align="center">62.7% | 66.8%</td>
+      <td align="center">74.4% | 78.7%</td>
+      <td align="center">82.8% | 87.2%</td>
+      <td align="center">90.0% | 92.7%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+    </tr>
+    <tr>
+      <td align="center">GoogleNet</td>
+      <td align="center">62.7% | 66.8%</td>
+      <td align="center">74.4% | 78.7%</td>
+      <td align="center">82.8% | 87.2%</td>
+      <td align="center">90.0% | 92.7%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
     </tr>
   </tbody>
 </table>
@@ -164,23 +201,33 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU.
   <tbody>
     <tr>
       <td align="center">ResNet50</td>
-      <td align="center">88.4%</td>
-      <td align="center">97.5%</td>
-      <td align="center">98.3%</td>
-      <td align="center">98.7%</td>
-      <td align="center">98.9%</td>
-      <td align="center">99.0%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1MW1Snt079y0wtPMA3Eeyhg">5wja</a></td>
+      <td align="center">64.1% | 68.4%</td>
+      <td align="center">75.4% | 79.9%</td>
+      <td align="center">83.6% | 87.6%</td>
+      <td align="center">90.6% | 92.9%</td>
+      <td align="center">83.6% | 87.6%</td>
+      <td align="center">90.6% | 92.9%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
     </tr>
     <tr>
-      <td align="center">SEResNet50</td>
-      <td align="center">87.6%</td>
-      <td align="center">97.4%</td>
-      <td align="center">98.3%</td>
-      <td align="center">98.6%</td>
-      <td align="center">98.7%</td>
-      <td align="center">98.9%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1MW1Snt079y0wtPMA3Eeyhg">5wja</a></td>
+      <td align="center">BNInception</td>
+      <td align="center">62.7% | 66.8%</td>
+      <td align="center">74.4% | 78.7%</td>
+      <td align="center">82.8% | 87.2%</td>
+      <td align="center">90.0% | 92.7%</td>
+      <td align="center">83.6% | 87.6%</td>
+      <td align="center">90.6% | 92.9%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+    </tr>
+    <tr>
+      <td align="center">GoogleNet</td>
+      <td align="center">62.7% | 66.8%</td>
+      <td align="center">74.4% | 78.7%</td>
+      <td align="center">82.8% | 87.2%</td>
+      <td align="center">90.0% | 92.7%</td>
+      <td align="center">83.6% | 87.6%</td>
+      <td align="center">90.6% | 92.9%</td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
     </tr>
   </tbody>
 </table>

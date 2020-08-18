@@ -87,7 +87,7 @@ def plot(embeds, fig_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run toy experiments in STL10 dataset')
-    parser.add_argument('--data_path', default='/home/data/stl10', type=str, help='datasets path')
+    parser.add_argument('--data_path', default='/home/data/stl10', type=str, help='dataset path')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
     parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
