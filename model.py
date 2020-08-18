@@ -26,7 +26,7 @@ class ProxyLinear(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim, num_classes, with_learnable_proxy=False):
+    def __init__(self, backbone_type, feature_dim, num_classes):
         super().__init__()
 
         # Backbone Network
@@ -44,7 +44,7 @@ class Model(nn.Module):
         # Refactor Layer
         self.refactor = nn.Linear(middle_dim, feature_dim, bias=False)
         # Classification Layer
-        self.fc = ProxyLinear(feature_dim, num_classes, with_learnable_proxy)
+        self.fc = ProxyLinear(feature_dim, num_classes)
 
     def forward(self, x):
         features = self.backbone(x)

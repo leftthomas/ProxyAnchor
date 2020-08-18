@@ -34,12 +34,10 @@ def train(net, optim):
         optim.step()
 
         # update weight
-        if not with_learnable_proxy:
-            updated_weight = F.normalize(net.fc.weight.clone().detach(), dim=-1).index_select(0, labels) * (
-                        1.0 - momentum)
-            net.fc.weight.index_copy_(0, labels, updated_weight)
-            updated_feature = features.clone().detach().detach() * momentum
-            net.fc.weight.index_add_(0, labels, updated_feature)
+        updated_weight = F.normalize(net.fc.weight.clone().detach(), dim=-1).index_select(0, labels) * (1.0 - momentum)
+        net.fc.weight.index_copy_(0, labels, updated_weight)
+        updated_feature = features.clone().detach() * momentum
+        net.fc.weight.index_add_(0, labels, updated_feature)
 
         pred = torch.argmax(classes, dim=-1)
         total_loss += loss.item() * inputs.size(0)
@@ -92,7 +90,6 @@ if __name__ == '__main__':
                         help='backbone network type')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--temperature', default=0.03, type=float, help='temperature scale used in temperature softmax')
-    parser.add_argument('--with_learnable_proxy', action='store_true', help='use learnable proxy or not')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
@@ -103,9 +100,8 @@ if __name__ == '__main__':
     # args parse
     data_path, data_name, backbone_type, feature_dim = opt.data_path, opt.data_name, opt.backbone_type, opt.feature_dim
     temperature, momentum, batch_size, num_epochs = opt.temperature, opt.momentum, opt.batch_size, opt.num_epochs
-    lr, with_learnable_proxy, recalls = opt.lr, opt.with_learnable_proxy, [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum,
-                                               with_learnable_proxy)
+    lr, recalls = opt.lr, [int(k) for k in opt.recalls.split(',')]
+    save_name_pre = '{}_{}_{}_{}_{}'.format(data_name, backbone_type, feature_dim, temperature, momentum)
 
     results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
@@ -124,7 +120,7 @@ if __name__ == '__main__':
         eval_dict['gallery'] = {'data_loader': gallery_data_loader}
 
     # model setup, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx), with_learnable_proxy).cuda()
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
     optimizer = Adam(model.parameters(), lr=lr)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
     loss_criterion = nn.CrossEntropyLoss()
