@@ -24,7 +24,7 @@ for i, data_name in enumerate(['CUB-200', 'Cars-196', 'SOP', 'In-Shop']):
     for index, label in enumerate(labels):
         ax.plot(x, y[data_name][index], label=label, linestyle='--')
 lines, labels = fig.axes[-1].get_legend_handles_labels()
-plt.legend(lines, labels, loc='center right', bbox_to_anchor=(0.0, -0.03, 0.9, 0.2), ncol=len(labels), mode='expand',
+plt.legend(lines, labels, loc='center right', bbox_to_anchor=(0.1, -0.03, 0.8, 0.2), ncol=len(labels), mode='expand',
            bbox_transform=plt.gcf().transFigure)
 fig.subplots_adjust(bottom=0.2)
 plt.show()
