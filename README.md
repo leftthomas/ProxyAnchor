@@ -237,11 +237,4 @@ The models are trained on one NVIDIA Tesla V100 (32G) GPU. `temperature` is `0.0
 </table>
 
 ## Results
-
-### CAR/CUB
-
-![CAR/CUB](results/car_cub.png)
-
-### SOP/ISC
-
-![SOP/ISC](results/sop_isc.png)
+![vis](results/results.png)
