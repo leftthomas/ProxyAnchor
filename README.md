@@ -89,7 +89,7 @@ are the default values.
       <td align="center">92.5% | 87.7%</td>
       <td align="center">95.6% | 92.5%</td>
       <td align="center">97.4% | 95.7%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a></td>
     </tr>
     <tr>
       <td align="center">BNInception</td>
@@ -97,7 +97,7 @@ are the default values.
       <td align="center">90.5% | 85.5%</td>
       <td align="center">94.3% | 91.0%</td>
       <td align="center">96.6% | 94.8%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
@@ -105,7 +105,7 @@ are the default values.
       <td align="center">86.2% | 81.2%</td>
       <td align="center">91.5% | 88.0%</td>
       <td align="center">95.1% | 93.1%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a> | <a href="https://pan.baidu.com/s/15jsM45iZY-u08Y39VkmRSQ">fygj</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a></td>
     </tr>
   </tbody>
 </table>
@@ -129,7 +129,7 @@ are the default values.
       <td align="center">79.6% | 74.0%</td>
       <td align="center">86.9% | 82.9%</td>
       <td align="center">92.2% | 89.6%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">BNInception</td>
@@ -137,7 +137,7 @@ are the default values.
       <td align="center">77.3% | 70.2%</td>
       <td align="center">85.7% | 81.5%</td>
       <td align="center">91.0% | 88.8%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
@@ -145,7 +145,7 @@ are the default values.
       <td align="center">73.6% | 68.6%</td>
       <td align="center">82.8% | 79.4%</td>
       <td align="center">89.8% | 87.3%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
   </tbody>
 </table>
@@ -169,7 +169,7 @@ are the default values.
       <td align="center">91.2% | 89.7%</td>
       <td align="center">96.3% | 95.6%</td>
       <td align="center">98.8% | 98.5%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">BNInception</td>
@@ -177,7 +177,7 @@ are the default values.
       <td align="center">90.3% | 88.3%</td>
       <td align="center">95.8% | 95.0%</td>
       <td align="center">98.7% | 98.4%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
@@ -185,7 +185,7 @@ are the default values.
       <td align="center">86.4% | 84.3%</td>
       <td align="center">94.1% | 93.2%</td>
       <td align="center">98.1% | 97.8%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
   </tbody>
 </table>
@@ -213,7 +213,7 @@ are the default values.
       <td align="center">99.0% | 98.7%</td>
       <td align="center">99.1% | 98.9%</td>
       <td align="center">99.3% | 99.1%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">BNInception</td>
@@ -223,7 +223,7 @@ are the default values.
       <td align="center">98.6% | 98.3%</td>
       <td align="center">98.8% | 98.6%</td>
       <td align="center">98.9% | 98.8%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
@@ -233,7 +233,7 @@ are the default values.
       <td align="center">97.1% | 96.6%</td>
       <td align="center">97.7% | 97.1%</td>
       <td align="center">97.9% | 97.4%</td>
-      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a> | <a href="https://pan.baidu.com/s/101_f16MD7y2cLuC6RRpJBA">h37y</a></td>
+      <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
   </tbody>
 </table>
