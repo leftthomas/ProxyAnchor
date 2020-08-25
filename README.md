@@ -79,7 +79,7 @@ are the default values.
       <th>R@2</th>
       <th>R@4</th>
       <th>R@8</th>
-      <th>Download Link</th>
+      <th>Download</th>
     </tr>
   </thead>
   <tbody>
@@ -92,7 +92,7 @@ are the default values.
       <td align="center"><a href="https://pan.baidu.com/s/1Wld7E02CaRgaZi4cv4I7dQ">gcmw</a></td>
     </tr>
     <tr>
-      <td align="center">BNInception</td>
+      <td align="center">Inception</td>
       <td align="center">84.0% | 77.0%</td>
       <td align="center">90.5% | 85.5%</td>
       <td align="center">94.3% | 91.0%</td>
@@ -119,7 +119,7 @@ are the default values.
       <th>R@2</th>
       <th>R@4</th>
       <th>R@8</th>
-      <th>Download Link</th>
+      <th>Download</th>
     </tr>
   </thead>
   <tbody>
@@ -132,7 +132,7 @@ are the default values.
       <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
-      <td align="center">BNInception</td>
+      <td align="center">Inception</td>
       <td align="center">66.7% | 58.4%</td>
       <td align="center">77.3% | 70.2%</td>
       <td align="center">85.7% | 81.5%</td>
@@ -159,7 +159,7 @@ are the default values.
       <th>R@10</th>
       <th>R@100</th>
       <th>R@1000</th>
-      <th>Download Link</th>
+      <th>Download</th>
     </tr>
   </thead>
   <tbody>
@@ -172,7 +172,7 @@ are the default values.
       <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
-      <td align="center">BNInception</td>
+      <td align="center">Inception</td>
       <td align="center">78.5% | 74.9%</td>
       <td align="center">90.3% | 88.3%</td>
       <td align="center">95.8% | 95.0%</td>
@@ -201,7 +201,7 @@ are the default values.
       <th>R@30</th>
       <th>R@40</th>
       <th>R@50</th>
-      <th>Download Link</th>
+      <th>Download</th>
     </tr>
   </thead>
   <tbody>
@@ -216,7 +216,7 @@ are the default values.
       <td align="center"><a href="https://pan.baidu.com/s/19Hmibn-RbxAUTnOEPxxafw">qkjs</a></td>
     </tr>
     <tr>
-      <td align="center">BNInception</td>
+      <td align="center">Inception</td>
       <td align="center">87.7% | 84.6%</td>
       <td align="center">97.5% | 96.6%</td>
       <td align="center">98.3% | 97.9%</td>
