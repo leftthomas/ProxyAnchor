@@ -1,8 +1,7 @@
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms, datasets
-import numpy as np
+from torchvision import transforms
 
 
 class Identity(object):
@@ -42,7 +41,7 @@ class ImageReader(Dataset):
         if data_type == 'train':
             self.transform = transforms.Compose([
                 RGBToBGR() if backbone_type == 'inception' else Identity(),
-                transforms.RandomResizedCrop(256),
+                transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 ScaleIntensities([0, 1], [0, 255]) if backbone_type == 'inception' else Identity(),
@@ -50,7 +49,7 @@ class ImageReader(Dataset):
         else:
             self.transform = transforms.Compose([
                 RGBToBGR() if backbone_type == 'inception' else Identity(),
-                transforms.Resize(292), transforms.CenterCrop(256),
+                transforms.Resize(256), transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 ScaleIntensities([0, 1], [0, 255]) if backbone_type == 'inception' else Identity(),
                 normalize])
@@ -85,7 +84,7 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
         sim_matrix = sim_matrix / feature_vectors.size(-1)
 
     if gallery_labels is None:
-        sim_matrix.fill_diagonal_(0)
+        sim_matrix.fill_diagonal_(-1)
         gallery_labels = feature_labels
     else:
         gallery_labels = torch.tensor(gallery_labels, device=feature_vectors.device)
@@ -96,29 +95,3 @@ def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_
         correct = (gallery_labels[idx[:, 0:r]] == feature_labels.unsqueeze(dim=-1)).any(dim=-1).float()
         acc_list.append((torch.sum(correct) / num_features).item())
     return acc_list
-
-
-# use fold 0, the first 7 classes as train classes, and the remaining classes as novel test classes
-# <=60 samples for each test class, only used for toy example
-class STL10(datasets.STL10):
-    def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
-        super().__init__(root, 'train' if train else 'test', 0, transform, target_transform, download)
-        datas, targets, counts = [], [], [0, 0, 0]
-        for data, target in zip(self.data, self.labels):
-            if train:
-                if target < 7:
-                    datas.append(data)
-                    targets.append(target)
-            else:
-                if target >= 7:
-                    if counts[target - 7] >= 60:
-                        continue
-                    else:
-                        counts[target - 7] += 1
-                        datas.append(data)
-                        targets.append(target - 7)
-        if train:
-            self.classes = self.classes[:7]
-        else:
-            self.classes = self.classes[7:]
-        self.data, self.labels = np.stack(datas, axis=0), np.stack(targets, axis=0)
