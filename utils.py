@@ -74,24 +74,14 @@ def set_bn_eval(m):
         m.eval()
 
 
-def recall(feature_vectors, feature_labels, rank, gallery_vectors=None, gallery_labels=None, binary=False):
-    num_features = len(feature_labels)
+def recall(feature_vectors, feature_labels, rank):
     feature_labels = torch.tensor(feature_labels, device=feature_vectors.device)
-    gallery_vectors = feature_vectors if gallery_vectors is None else gallery_vectors
-
-    sim_matrix = torch.mm(feature_vectors, gallery_vectors.t().contiguous())
-    if binary:
-        sim_matrix = sim_matrix / feature_vectors.size(-1)
-
-    if gallery_labels is None:
-        sim_matrix.fill_diagonal_(-1)
-        gallery_labels = feature_labels
-    else:
-        gallery_labels = torch.tensor(gallery_labels, device=feature_vectors.device)
+    sim_matrix = torch.mm(feature_vectors, feature_vectors.t().contiguous())
+    sim_matrix.fill_diagonal_(-1.0)
 
     idx = sim_matrix.topk(k=rank[-1], dim=-1, largest=True)[1]
     acc_list = []
     for r in rank:
-        correct = (gallery_labels[idx[:, 0:r]] == feature_labels.unsqueeze(dim=-1)).any(dim=-1).float()
-        acc_list.append((torch.sum(correct) / num_features).item())
+        correct = (torch.eq(feature_labels[idx[:, 0:r]], feature_labels.unsqueeze(dim=-1))).any(dim=-1)
+        acc_list.append((torch.sum(correct.float()) / correct.size(0)).item())
     return acc_list

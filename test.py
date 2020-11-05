@@ -9,7 +9,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test Model')
     parser.add_argument('--query_img_name', default='/home/data/car/uncropped/008055.jpg', type=str,
                         help='query image name')
-    parser.add_argument('--data_base', default='car_resnet50_512_0.03_0.5_data_base.pth',
+    parser.add_argument('--data_base', default='car_resnet50_proxy_nca_512_0.5_data_base.pth',
                         type=str, help='queried database')
     parser.add_argument('--retrieval_num', default=8, type=int, help='retrieval number')
 
@@ -27,13 +27,12 @@ if __name__ == '__main__':
     query_label = torch.tensor(data_base['test_labels'][query_index])
     query_feature = data_base['test_features'][query_index]
 
-    gallery_images = data_base['{}_images'.format('test' if data_name != 'isc' else 'gallery')]
-    gallery_labels = torch.tensor(data_base['{}_labels'.format('test' if data_name != 'isc' else 'gallery')])
-    gallery_features = data_base['{}_features'.format('test' if data_name != 'isc' else 'gallery')]
+    gallery_images = data_base['test_images']
+    gallery_labels = torch.tensor(data_base['test_labels'])
+    gallery_features = data_base['test_features']
 
     sim_matrix = torch.mm(query_feature.unsqueeze(0), gallery_features.t().contiguous()).squeeze()
-    if data_name != 'isc':
-        sim_matrix[query_index] = 0.0
+    sim_matrix[query_index] = -1.0
     idx = sim_matrix.topk(k=retrieval_num, dim=-1)[1]
 
     result_path = 'results/{}'.format(query_img_name.split('/')[-1].split('.')[0])
@@ -46,10 +45,10 @@ if __name__ == '__main__':
             .resize((224, 224), resample=Image.BILINEAR)
         draw = ImageDraw.Draw(retrieval_image)
         retrieval_label = gallery_labels[index.item()]
-        retrieval_status = (retrieval_label == query_label).item()
-        retrieval_dist = sim_matrix[index.item()].item()
+        retrieval_status = (torch.equal(retrieval_label, query_label)).item()
+        retrieval_sim = sim_matrix[index.item()].item()
         if retrieval_status:
             draw.rectangle((0, 0, 223, 223), outline='green', width=8)
         else:
             draw.rectangle((0, 0, 223, 223), outline='red', width=8)
-        retrieval_image.save('{}/retrieval_img_{}_{}.jpg'.format(result_path, num + 1, '%.4f' % retrieval_dist))
+        retrieval_image.save('{}/retrieval_img_{}_{}.jpg'.format(result_path, num + 1, '%.4f' % retrieval_sim))
