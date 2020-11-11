@@ -39,6 +39,7 @@ optional arguments:
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
 --loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'large_margin_softmax', 'normalized_softmax', 
                               'sphere_face', 'cos_face', 'arc_face', 'soft_triple', 'proxy_anchor'])
+--optimizer_type              optimizer type [default value is 'adam*'](choices=['adam*', 'sgd*', 'adam', 'sgd'])
 --feature_dim                 feature dim [default value is 512]
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --recalls                     selected recall [default value is '1,2,4,8']
@@ -51,7 +52,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_nca_512_0.5_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_proxy_nca_adam*_512_0.5_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

@@ -1,3 +1,4 @@
+import pytorch_metric_learning.losses as losses
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -85,3 +86,24 @@ def recall(feature_vectors, feature_labels, rank):
         correct = (torch.eq(feature_labels[idx[:, 0:r]], feature_labels.unsqueeze(dim=-1))).any(dim=-1)
         acc_list.append((torch.sum(correct.float()) / correct.size(0)).item())
     return acc_list
+
+
+def choose_loss(loss_name, num_classes, embedding_size):
+    if loss_name == 'proxy_nca':
+        return losses.ProxyNCALoss(num_classes, embedding_size)
+    elif loss_name == 'large_margin_softmax':
+        return losses.LargeMarginSoftmaxLoss(num_classes, embedding_size)
+    elif loss_name == 'normalized_softmax':
+        return losses.NormalizedSoftmaxLoss(num_classes, embedding_size)
+    elif loss_name == 'sphere_face':
+        return losses.SphereFaceLoss(num_classes, embedding_size)
+    elif loss_name == 'cos_face':
+        return losses.CosFaceLoss(num_classes, embedding_size)
+    elif loss_name == 'arc_face':
+        return losses.ArcFaceLoss(num_classes, embedding_size)
+    elif loss_name == 'soft_triple':
+        return losses.SoftTripleLoss(num_classes, embedding_size)
+    elif loss_name == 'proxy_anchor':
+        return losses.ProxyAnchorLoss(num_classes, embedding_size)
+    else:
+        raise NotImplemented('Not support {} loss'.format(loss_name))
