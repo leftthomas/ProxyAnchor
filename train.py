@@ -23,11 +23,11 @@ def train(net, optim):
     net.train()
     # fix bn on backbone network
     net.backbone.apply(set_bn_eval)
-    total_loss, total_num, data_bar = 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
+    total_loss, total_num, features, targets, data_bar = 0.0, 0, [], [], tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
-        features = net(inputs)
-        loss = loss_func(features, labels)
+        feature = net(inputs)
+        loss = loss_func(feature, labels)
         optim.zero_grad()
         loss.backward()
         optim.step()
@@ -38,19 +38,29 @@ def train(net, optim):
                 proxies = loss_func.proxies.data
                 updated_weight = proxies.index_select(0, labels) * (1.0 - momentum)
                 proxies.index_copy_(0, labels, updated_weight)
-                updated_feature = features.detach() * momentum
+                updated_feature = feature.detach() * momentum
                 proxies.index_add_(0, labels, updated_feature)
             else:
                 proxies = loss_func.W.data
                 updated_weight = proxies.index_select(-1, labels) * (1.0 - momentum)
                 proxies.index_copy_(-1, labels, updated_weight)
-                updated_feature = features.detach().t().contiguous() * momentum
+                updated_feature = feature.detach().t().contiguous() * momentum
                 proxies.index_add_(-1, labels, updated_feature)
 
+        features.append(F.normalize(feature.detach(), dim=-1))
+        targets.append(labels)
         total_loss += loss.item() * inputs.size(0)
         total_num += inputs.size(0)
         data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f}'.format(epoch, num_epochs, total_loss / total_num))
 
+    features = torch.cat(features, dim=0)
+    targets = torch.cat(targets, dim=0)
+    data_base['train_features'] = features
+    data_base['train_labels'] = targets
+    if hasattr(loss_func, 'proxies'):
+        data_base['train_proxies'] = F.normalize(loss_func.proxies.data, dim=-1)
+    else:
+        data_base['train_proxies'] = F.normalize(loss_func.W.data.t().contiguous(), dim=-1)
     return total_loss / total_num
 
 
@@ -71,7 +81,7 @@ def test(net, recall_ids):
         desc += 'R@{}:{:.2f}% '.format(rank_id, acc_list[index] * 100)
         results['test_recall@{}'.format(rank_id)].append(acc_list[index] * 100)
     print(desc)
-    return features, acc_list[0]
+    return features
 
 
 if __name__ == '__main__':
@@ -124,19 +134,17 @@ if __name__ == '__main__':
                          {'params': loss_func.parameters(), 'lr': 1.0}], lr=0.01, momentum=0.9)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
 
-    best_recall, data_base = 0.0, {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
+    data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):
         train_loss = train(model, optimizer)
         results['train_loss'].append(train_loss)
-        test_features, rank = test(model, recalls)
+        test_features = test(model, recalls)
         lr_scheduler.step()
 
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
         data_frame.to_csv('results/{}_statistics.csv'.format(save_name_pre), index_label='epoch')
         # save database and model
-        if rank > best_recall:
-            best_recall = rank
-            data_base['test_features'] = test_features
-            torch.save(model.state_dict(), 'results/{}_model.pth'.format(save_name_pre))
-            torch.save(data_base, 'results/{}_data_base.pth'.format(save_name_pre))
+        data_base['test_features'] = test_features
+        torch.save(model.state_dict(), 'results/{}_{}_model.pth'.format(save_name_pre, epoch))
+        torch.save(data_base, 'results/{}_{}_data_base.pth'.format(save_name_pre, epoch))

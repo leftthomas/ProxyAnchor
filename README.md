@@ -52,7 +52,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_nca_adam*_512_0.5_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_proxy_nca_adam*_512_0.5_30_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
