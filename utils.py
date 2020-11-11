@@ -101,8 +101,6 @@ def choose_loss(loss_name, num_classes, embedding_size):
         return losses.CosFaceLoss(num_classes, embedding_size)
     elif loss_name == 'arc_face':
         return losses.ArcFaceLoss(num_classes, embedding_size)
-    elif loss_name == 'soft_triple':
-        return losses.SoftTripleLoss(num_classes, embedding_size)
     elif loss_name == 'proxy_anchor':
         return losses.ProxyAnchorLoss(num_classes, embedding_size)
     else:

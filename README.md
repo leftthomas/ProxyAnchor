@@ -38,12 +38,12 @@ optional arguments:
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
 --loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'large_margin_softmax', 'normalized_softmax', 
-                              'sphere_face', 'cos_face', 'arc_face', 'soft_triple', 'proxy_anchor'])
+                              'sphere_face', 'cos_face', 'arc_face', 'proxy_anchor'])
 --optimizer_type              optimizer type [default value is 'adam*'](choices=['adam*', 'sgd*', 'adam', 'sgd'])
 --feature_dim                 feature dim [default value is 512]
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --recalls                     selected recall [default value is '1,2,4,8']
---batch_size                  training batch size [default value is 128]
+--batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 30]
 ```
 

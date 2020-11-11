@@ -23,7 +23,7 @@ def train(net, optim):
     net.train()
     # fix bn on backbone network
     net.backbone.apply(set_bn_eval)
-    total_loss, total_correct, total_num, data_bar = 0.0, 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
+    total_loss, total_num, data_bar = 0.0, 0, tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         features = net(inputs)
@@ -32,20 +32,26 @@ def train(net, optim):
         loss.backward()
         optim.step()
 
-        # update weight
-        updated_weight = F.normalize(loss_func.W.detach(), dim=-1).index_select(0, labels) * (1.0 - momentum)
-        loss_func.W.index_copy_(0, labels, updated_weight)
-        updated_feature = features.detach() * momentum
-        loss_func.W.index_add_(0, labels, updated_feature)
+        if '*' in optimizer_type:
+            # update weight
+            if hasattr(loss_func, 'proxies'):
+                proxies = loss_func.proxies.data
+                updated_weight = proxies.index_select(0, labels) * (1.0 - momentum)
+                proxies.index_copy_(0, labels, updated_weight)
+                updated_feature = features.detach() * momentum
+                proxies.index_add_(0, labels, updated_feature)
+            else:
+                proxies = loss_func.W.data
+                updated_weight = proxies.index_select(-1, labels) * (1.0 - momentum)
+                proxies.index_copy_(-1, labels, updated_weight)
+                updated_feature = features.detach().t().contiguous() * momentum
+                proxies.index_add_(-1, labels, updated_feature)
 
-        pred = torch.argmax(classes, dim=-1)
         total_loss += loss.item() * inputs.size(0)
-        total_correct += torch.sum(torch.eq(pred, labels).float()).item()
         total_num += inputs.size(0)
-        data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'
-                                 .format(epoch, num_epochs, total_loss / total_num, total_correct / total_num * 100))
+        data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f}'.format(epoch, num_epochs, total_loss / total_num))
 
-    return total_loss / total_num, total_correct / total_num * 100
+    return total_loss / total_num
 
 
 def test(net, recall_ids):
@@ -54,7 +60,8 @@ def test(net, recall_ids):
         # obtain feature vectors for all data
         features = []
         for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
-            features.append(net(inputs.cuda()))
+            feature = net(inputs.cuda())
+            features.append(F.normalize(feature, dim=-1))
         features = torch.cat(features, dim=0)
 
         # compute recall metric
@@ -75,13 +82,13 @@ if __name__ == '__main__':
                         help='backbone network type')
     parser.add_argument('--loss_name', default='proxy_nca', type=str,
                         choices=['proxy_nca', 'large_margin_softmax', 'normalized_softmax', 'sphere_face', 'cos_face',
-                                 'arc_face', 'soft_triple', 'proxy_anchor'], help='loss name')
+                                 'arc_face', 'proxy_anchor'], help='loss name')
     parser.add_argument('--optimizer_type', default='adam*', type=str, choices=['adam*', 'sgd*', 'adam', 'sgd'],
                         help='optimizer type')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
-    parser.add_argument('--batch_size', default=128, type=int, help='training batch size')
+    parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=30, type=int, help='training epoch number')
 
     opt = parser.parse_args()
@@ -92,7 +99,7 @@ if __name__ == '__main__':
     save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type, feature_dim,
                                                momentum)
 
-    results = {'train_loss': [], 'train_accuracy': []}
+    results = {'train_loss': []}
     for recall_id in recalls:
         results['test_recall@{}'.format(recall_id)] = []
 
@@ -119,9 +126,8 @@ if __name__ == '__main__':
 
     best_recall, data_base = 0.0, {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):
-        train_loss, train_accuracy = train(model, optimizer)
+        train_loss = train(model, optimizer)
         results['train_loss'].append(train_loss)
-        results['train_accuracy'].append(train_accuracy)
         test_features, rank = test(model, recalls)
         lr_scheduler.step()
 
