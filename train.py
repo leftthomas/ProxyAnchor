@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
-    parser.add_argument('--num_epochs', default=30, type=int, help='training epoch number')
+    parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
 
     opt = parser.parse_args()
     # args parse
@@ -127,10 +127,10 @@ if __name__ == '__main__':
             # not update by gradient
             param.requires_grad = False
     if 'adam' in optimizer_type:
-        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=1e-5)
+        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=4e-5)
     else:
         optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=0.01, momentum=0.9)
-    lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
+    lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):

@@ -44,7 +44,7 @@ optional arguments:
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 64]
---num_epochs                  training epoch number [default value is 30]
+--num_epochs                  training epoch number [default value is 20]
 ```
 
 ### Test Model
