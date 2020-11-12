@@ -2,6 +2,7 @@ import argparse
 import os
 import shutil
 
+import numpy as np
 import torch
 from PIL import Image, ImageDraw
 
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     gallery_features = data_base['test_features']
 
     sim_matrix = torch.mm(query_feature.unsqueeze(0), gallery_features.t().contiguous()).squeeze()
-    sim_matrix[query_index] = -1.0
+    sim_matrix[query_index] = -np.inf
     idx = sim_matrix.topk(k=retrieval_num, dim=-1)[1]
 
     result_path = 'results/{}'.format(query_img_name.split('/')[-1].split('.')[0])

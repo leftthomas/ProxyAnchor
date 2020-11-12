@@ -1,3 +1,4 @@
+import numpy as np
 import pytorch_metric_learning.losses as losses
 import torch
 from PIL import Image
@@ -78,7 +79,7 @@ def set_bn_eval(m):
 def recall(feature_vectors, feature_labels, rank):
     feature_labels = torch.tensor(feature_labels, device=feature_vectors.device)
     sim_matrix = torch.mm(feature_vectors, feature_vectors.t().contiguous())
-    sim_matrix.fill_diagonal_(-1.0)
+    sim_matrix.fill_diagonal_(-np.inf)
 
     idx = sim_matrix.topk(k=rank[-1], dim=-1, largest=True)[1]
     acc_list = []
@@ -91,12 +92,8 @@ def recall(feature_vectors, feature_labels, rank):
 def choose_loss(loss_name, num_classes, embedding_size):
     if loss_name == 'proxy_nca':
         return losses.ProxyNCALoss(num_classes, embedding_size)
-    elif loss_name == 'large_margin_softmax':
-        return losses.LargeMarginSoftmaxLoss(num_classes, embedding_size)
     elif loss_name == 'normalized_softmax':
         return losses.NormalizedSoftmaxLoss(num_classes, embedding_size)
-    elif loss_name == 'sphere_face':
-        return losses.SphereFaceLoss(num_classes, embedding_size)
     elif loss_name == 'cos_face':
         return losses.CosFaceLoss(num_classes, embedding_size)
     elif loss_name == 'arc_face':

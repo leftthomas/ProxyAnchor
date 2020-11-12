@@ -91,8 +91,8 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
     parser.add_argument('--loss_name', default='proxy_nca', type=str,
-                        choices=['proxy_nca', 'large_margin_softmax', 'normalized_softmax', 'sphere_face', 'cos_face',
-                                 'arc_face', 'proxy_anchor'], help='loss name')
+                        choices=['proxy_nca', 'normalized_softmax', 'cos_face', 'arc_face', 'proxy_anchor'],
+                        help='loss name')
     parser.add_argument('--optimizer_type', default='adam*', type=str, choices=['adam*', 'sgd*', 'adam', 'sgd'],
                         help='optimizer type')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
@@ -127,11 +127,9 @@ if __name__ == '__main__':
             # not update by gradient
             param.requires_grad = False
     if 'adam' in optimizer_type:
-        optimizer = Adam([{'params': model.parameters()},
-                          {'params': loss_func.parameters(), 'lr': 1e-2}], lr=1e-4)
+        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=1e-5)
     else:
-        optimizer = SGD([{'params': model.parameters()},
-                         {'params': loss_func.parameters(), 'lr': 1.0}], lr=0.01, momentum=0.9)
+        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=0.01, momentum=0.9)
     lr_scheduler = StepLR(optimizer, step_size=num_epochs // 2, gamma=0.1)
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}

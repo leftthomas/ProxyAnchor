@@ -37,8 +37,8 @@ optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
---loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'large_margin_softmax', 'normalized_softmax', 
-                              'sphere_face', 'cos_face', 'arc_face', 'proxy_anchor'])
+--loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'normalized_softmax', 
+                              'cos_face', 'arc_face', 'proxy_anchor'])
 --optimizer_type              optimizer type [default value is 'adam*'](choices=['adam*', 'sgd*', 'adam', 'sgd'])
 --feature_dim                 feature dim [default value is 512]
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
