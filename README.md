@@ -42,6 +42,7 @@ optional arguments:
 --optimizer_type              optimizer type [default value is 'adam*'](choices=['adam*', 'sgd*', 'adam', 'sgd'])
 --feature_dim                 feature dim [default value is 512]
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
+--lr                          learning rate [default value is 0.001]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]

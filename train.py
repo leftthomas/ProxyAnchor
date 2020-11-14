@@ -97,6 +97,7 @@ if __name__ == '__main__':
                         help='optimizer type')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
+    parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, loss_name = opt.data_path, opt.data_name, opt.backbone_type, opt.loss_name
-    optimizer_type, feature_dim, momentum = opt.optimizer_type, opt.feature_dim, opt.momentum
+    optimizer_type, feature_dim, momentum, lr = opt.optimizer_type, opt.feature_dim, opt.momentum, opt.lr
     recalls, batch_size, num_epochs = [int(k) for k in opt.recalls.split(',')], opt.batch_size, opt.num_epochs
     save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type, feature_dim,
                                                momentum)
@@ -127,9 +128,9 @@ if __name__ == '__main__':
             # not update by gradient
             param.requires_grad = False
     if 'adam' in optimizer_type:
-        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=4e-5)
+        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
     else:
-        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=0.01, momentum=0.9)
+        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
