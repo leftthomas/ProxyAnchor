@@ -36,15 +36,15 @@ def train(net, optim):
             # update weight
             if hasattr(loss_func, 'proxies'):
                 proxies = loss_func.proxies.data
-                updated_weight = F.normalize(proxies, dim=-1).index_select(0, labels) * (1.0 - momentum)
+                updated_weight = proxies.index_select(0, labels) * (1.0 - momentum)
                 proxies.index_copy_(0, labels, updated_weight)
-                updated_feature = F.normalize(feature, dim=-1).detach() * momentum
+                updated_feature = feature.detach() * momentum
                 proxies.index_add_(0, labels, updated_feature)
             else:
                 proxies = loss_func.W.data
-                updated_weight = F.normalize(proxies, dim=0).index_select(-1, labels) * (1.0 - momentum)
+                updated_weight = proxies.index_select(-1, labels) * (1.0 - momentum)
                 proxies.index_copy_(-1, labels, updated_weight)
-                updated_feature = F.normalize(feature, dim=-1).detach().t().contiguous() * momentum
+                updated_feature = feature.detach().t().contiguous() * momentum
                 proxies.index_add_(-1, labels, updated_feature)
 
         features.append(F.normalize(feature.detach(), dim=-1))
