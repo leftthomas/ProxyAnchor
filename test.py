@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test Model')
-    parser.add_argument('--query_img_name', default='/home/data/car/uncropped/008055.jpg', type=str,
+    parser.add_argument('--query_img_name', default='/home/data/car/cropped/008055.jpg', type=str,
                         help='query image name')
     parser.add_argument('--data_base', default='car_resnet50_proxy_nca_adam*_0.5_20_data_base.pth',
                         type=str, help='queried database')

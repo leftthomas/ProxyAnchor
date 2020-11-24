@@ -81,8 +81,5 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='/home/data', type=str, help='datasets path')
 
     opt = parser.parse_args()
-
-    process_car_data('{}/car'.format(opt.data_path), 'uncropped')
     process_car_data('{}/car'.format(opt.data_path), 'cropped')
-    process_cub_data('{}/cub'.format(opt.data_path), 'uncropped')
     process_cub_data('{}/cub'.format(opt.data_path), 'cropped')

@@ -114,9 +114,9 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train', backbone_type)
-    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
+    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=16)
     test_data_set = ImageReader(data_path, data_name, 'test', backbone_type)
-    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
+    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=16)
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type).cuda()
