@@ -32,7 +32,7 @@ You should download these datasets by yourself, and extract them into `${data_pa
 ## Usage
 ### Train Model
 ```
-python train.py --feature_dim 1024
+python train.py --momentum 0.6
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
@@ -40,7 +40,6 @@ optional arguments:
 --loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'normalized_softmax', 
                               'cos_face', 'arc_face', 'proxy_anchor'])
 --optimizer_type              optimizer type [default value is 'adam*'](choices=['adam*', 'sgd*', 'adam', 'sgd'])
---feature_dim                 feature dim [default value is 512]
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --lr                          learning rate [default value is 0.001]
 --recalls                     selected recall [default value is '1,2,4,8']
@@ -53,7 +52,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_nca_adam*_512_0.5_30_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_proxy_nca_adam*_0.5_20_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

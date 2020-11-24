@@ -5,7 +5,7 @@ from torchvision.models import resnet50, googlenet
 
 
 class Model(nn.Module):
-    def __init__(self, backbone_type, feature_dim):
+    def __init__(self, backbone_type, feature_dim=512):
         super().__init__()
 
         # Backbone Network

@@ -95,7 +95,6 @@ if __name__ == '__main__':
                         help='loss name')
     parser.add_argument('--optimizer_type', default='adam*', type=str, choices=['adam*', 'sgd*', 'adam', 'sgd'],
                         help='optimizer type')
-    parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
@@ -105,10 +104,9 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, loss_name = opt.data_path, opt.data_name, opt.backbone_type, opt.loss_name
-    optimizer_type, feature_dim, momentum, lr = opt.optimizer_type, opt.feature_dim, opt.momentum, opt.lr
-    recalls, batch_size, num_epochs = [int(k) for k in opt.recalls.split(',')], opt.batch_size, opt.num_epochs
-    save_name_pre = '{}_{}_{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type, feature_dim,
-                                               momentum)
+    optimizer_type, momentum, lr, batch_size = opt.optimizer_type, opt.momentum, opt.lr, opt.batch_size
+    recalls, num_epochs = [int(k) for k in opt.recalls.split(',')], opt.num_epochs
+    save_name_pre = '{}_{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type, momentum)
 
     results = {'train_loss': []}
     for recall_id in recalls:
@@ -121,8 +119,8 @@ if __name__ == '__main__':
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
 
     # model setup, optimizer config and loss definition
-    model = Model(backbone_type, feature_dim).cuda()
-    loss_func = choose_loss(loss_name, len(train_data_set.class_to_idx), feature_dim).cuda()
+    model = Model(backbone_type).cuda()
+    loss_func = choose_loss(loss_name, len(train_data_set.class_to_idx), 512).cuda()
     if '*' in optimizer_type:
         for param in loss_func.parameters():
             # not update by gradient
