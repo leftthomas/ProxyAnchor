@@ -32,7 +32,7 @@ def train(net, optim):
         loss.backward()
         optim.step()
 
-        if '*' in optimizer_type:
+        if 'P' in optimizer_type:
             # update weight
             if hasattr(loss_func, 'proxies'):
                 proxies = loss_func.proxies.data
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss_name', default='proxy_nca', type=str,
                         choices=['proxy_nca', 'normalized_softmax', 'cos_face', 'arc_face', 'proxy_anchor'],
                         help='loss name')
-    parser.add_argument('--optimizer_type', default='adam*', type=str, choices=['adam*', 'sgd*', 'adam', 'sgd'],
+    parser.add_argument('--optimizer_type', default='adamP', type=str, choices=['adamP', 'sgdP', 'adam', 'sgd'],
                         help='optimizer type')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     # model setup, optimizer config and loss definition
     model = Model(backbone_type).cuda()
     loss_func = choose_loss(loss_name, len(train_data_set.class_to_idx), 512).cuda()
-    if '*' in optimizer_type:
+    if 'P' in optimizer_type:
         for param in loss_func.parameters():
             # not update by gradient
             param.requires_grad = False
