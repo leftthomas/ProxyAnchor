@@ -33,12 +33,12 @@ for data in ${data_name[*]}; do
   for backbone in ${backbone_type[*]}; do
     for loss in ${loss_name[*]}; do
       for optimizer in ${optimizer_type[*]}; do
-        if [[ ${loss} =~ "adam" ]]; then
+        if [[ ${optimizer} =~ "adam" ]]; then
           lr=4e-5
         else
           lr=4e-4
         fi
-        if [[ ${loss} =~ "P" ]]; then
+        if [[ ${optimizer} =~ "P" ]]; then
           momentums=(0.0 0.1 0.3 0.5 0.7 0.9 1.0)
         else
           momentums=(0.5)
