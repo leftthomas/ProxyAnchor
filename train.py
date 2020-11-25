@@ -128,7 +128,7 @@ if __name__ == '__main__':
     if 'adam' in optimizer_type:
         optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
     else:
-        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
+        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr, momentum=0.9)
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
