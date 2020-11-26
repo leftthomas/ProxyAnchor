@@ -36,7 +36,7 @@ for data in ${data_name[*]}; do
         if [[ ${optimizer} =~ "adam" ]]; then
           lr=4e-5
         else
-          lr=4e-4
+          lr=4e-3
         fi
         if [[ ${optimizer} =~ "P" ]]; then
           momentums=(0.0 0.1 0.3 0.5 0.7 0.9 1.0)

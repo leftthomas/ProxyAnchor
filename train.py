@@ -38,13 +38,13 @@ def train(net, optim):
                 proxies = loss_func.proxies.data
                 updated_weight = proxies.index_select(0, labels) * (1.0 - momentum)
                 proxies.index_copy_(0, labels, updated_weight)
-                updated_feature = feature.detach() * momentum
+                updated_feature = feature.detach() * momentum * lr
                 proxies.index_add_(0, labels, updated_feature)
             else:
                 proxies = loss_func.W.data
                 updated_weight = proxies.index_select(-1, labels) * (1.0 - momentum)
                 proxies.index_copy_(-1, labels, updated_weight)
-                updated_feature = feature.detach().t().contiguous() * momentum
+                updated_feature = feature.detach().t().contiguous() * momentum * lr
                 proxies.index_add_(-1, labels, updated_feature)
 
         features.append(F.normalize(feature.detach(), dim=-1))
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer_type', default='adamP', type=str, choices=['adamP', 'sgdP', 'adam', 'sgd'],
                         help='optimizer type')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
-    parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
+    parser.add_argument('--lr', default=4e-5, type=float, help='learning rate')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -114,9 +114,9 @@ if __name__ == '__main__':
 
     # dataset loader
     train_data_set = ImageReader(data_path, data_name, 'train', backbone_type)
-    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=16)
+    train_data_loader = DataLoader(train_data_set, batch_size, shuffle=True, num_workers=8)
     test_data_set = ImageReader(data_path, data_name, 'test', backbone_type)
-    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=16)
+    test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type).cuda()
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     if 'adam' in optimizer_type:
         optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
     else:
-        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr, momentum=0.9)
+        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
