@@ -96,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer_type', default='adamP', type=str, choices=['adamP', 'sgdP', 'adam', 'sgd'],
                         help='optimizer type')
     parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
-    parser.add_argument('--lr', default=4e-5, type=float, help='learning rate')
+    parser.add_argument('--lr', default=2e-5, type=float, help='learning rate')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')

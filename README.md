@@ -41,7 +41,7 @@ optional arguments:
                               'cos_face', 'arc_face', 'proxy_anchor'])
 --optimizer_type              optimizer type [default value is 'adamP'](choices=['adamP', 'sgdP', 'adam', 'sgd'])
 --momentum                    momentum used for the update of moving proxies [default value is 0.5]
---lr                          learning rate [default value is 4e-5]
+--lr                          learning rate [default value is 2e-5]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
