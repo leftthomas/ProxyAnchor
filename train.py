@@ -42,18 +42,25 @@ def train(net, optim):
             if hasattr(loss_func, 'alpha'):
                 scale = loss_func.alpha
 
+            class_count = torch.bincount(labels, minlength=len(train_data_set.class_to_idx))
+
             # update weight
             if hasattr(loss_func, 'proxies'):
                 proxies = loss_func.proxies.data
-                updated_weight = proxies.index_select(0, labels)
-                proxies.index_copy_(0, labels, updated_weight)
-                updated_feature = feature.detach() * momentum * scale
+                logits = torch.mm(F.normalize(feature.detach(), dim=-1),
+                                  F.normalize(proxies.detach().t().contiguous(), dim=0)) * scale
+                scores = 1.0 - F.softmax(logits, dim=-1).masked_select(
+                    F.one_hot(labels, len(train_data_set.class_to_idx)).bool())
+                updated_feature = feature.detach() * scores.unsqueeze(dim=-1) * lr * scale / class_count[
+                    labels].unsqueeze(dim=-1)
                 proxies.index_add_(0, labels, updated_feature)
             else:
                 proxies = loss_func.W.data
-                updated_weight = proxies.index_select(-1, labels)
-                proxies.index_copy_(-1, labels, updated_weight)
-                updated_feature = feature.detach().t().contiguous() * scale
+                logits = torch.mm(F.normalize(feature.detach(), dim=-1), F.normalize(proxies.detach(), dim=0)) * scale
+                scores = 1.0 - F.softmax(logits, dim=-1).masked_select(
+                    F.one_hot(labels, len(train_data_set.class_to_idx)).bool())
+                updated_feature = (feature.detach() * scores.unsqueeze(dim=-1) * lr * scale / class_count[labels]
+                                   .unsqueeze(dim=-1)).t().contiguous()
                 proxies.index_add_(-1, labels, updated_feature)
 
         features.append(F.normalize(feature.detach(), dim=-1))
