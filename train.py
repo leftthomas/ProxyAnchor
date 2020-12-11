@@ -33,18 +33,27 @@ def train(net, optim):
         optim.step()
 
         if 'P' in optimizer_type:
+            if hasattr(loss_func, 'softmax_scale'):
+                scale = loss_func.softmax_scale
+            if hasattr(loss_func, 'temperature'):
+                scale = 1.0 / loss_func.temperature
+            if hasattr(loss_func, 'scale'):
+                scale = loss_func.scale
+            if hasattr(loss_func, 'alpha'):
+                scale = loss_func.alpha
+
             # update weight
             if hasattr(loss_func, 'proxies'):
                 proxies = loss_func.proxies.data
-                updated_weight = proxies.index_select(0, labels) * (1.0 - momentum)
+                updated_weight = proxies.index_select(0, labels)
                 proxies.index_copy_(0, labels, updated_weight)
-                updated_feature = feature.detach() * momentum * lr
+                updated_feature = feature.detach() * momentum * scale
                 proxies.index_add_(0, labels, updated_feature)
             else:
                 proxies = loss_func.W.data
-                updated_weight = proxies.index_select(-1, labels) * (1.0 - momentum)
+                updated_weight = proxies.index_select(-1, labels)
                 proxies.index_copy_(-1, labels, updated_weight)
-                updated_feature = feature.detach().t().contiguous() * momentum * lr
+                updated_feature = feature.detach().t().contiguous() * scale
                 proxies.index_add_(-1, labels, updated_feature)
 
         features.append(F.normalize(feature.detach(), dim=-1))
@@ -95,7 +104,6 @@ if __name__ == '__main__':
                         help='loss name')
     parser.add_argument('--optimizer_type', default='adamP', type=str, choices=['adamP', 'sgdP', 'adam', 'sgd'],
                         help='optimizer type')
-    parser.add_argument('--momentum', default=0.5, type=float, help='momentum used for the update of moving proxies')
     parser.add_argument('--lr', default=2e-5, type=float, help='learning rate')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
@@ -104,9 +112,9 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, loss_name = opt.data_path, opt.data_name, opt.backbone_type, opt.loss_name
-    optimizer_type, momentum, lr, batch_size = opt.optimizer_type, opt.momentum, opt.lr, opt.batch_size
-    recalls, num_epochs = [int(k) for k in opt.recalls.split(',')], opt.num_epochs
-    save_name_pre = '{}_{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type, momentum)
+    optimizer_type, lr, batch_size, num_epochs = opt.optimizer_type, opt.lr, opt.batch_size, opt.num_epochs
+    recalls = [int(k) for k in opt.recalls.split(',')]
+    save_name_pre = '{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type)
 
     results = {'train_loss': []}
     for recall_id in recalls:

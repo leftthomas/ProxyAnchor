@@ -1,14 +1,19 @@
-# MP
-A PyTorch implementation of Momentum Proxy based on the paper [Momentum proxy based fine-grained image retrieval]().
+# PP
+
+A PyTorch implementation of Positive Proxy based on the
+paper [Learning proxies with only positive embeddings for fine-grained image retrieval]().
 
 ![Network Architecture](results/structure.png)
 
 ## Requirements
+
 - [Anaconda](https://www.anaconda.com/download/)
 - [PyTorch](https://pytorch.org)
+
 ```
 conda install pytorch torchvision torchaudio cudatoolkit=11.0 -c pytorch
 ```
+
 - pretrainedmodels
 ```
 pip install pretrainedmodels
@@ -32,7 +37,7 @@ You should download these datasets by yourself, and extract them into `${data_pa
 ## Usage
 ### Train Model
 ```
-python train.py --momentum 0.6
+python train.py --backbone_type inception --loss_name proxy_anchor
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
@@ -40,7 +45,6 @@ optional arguments:
 --loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'normalized_softmax', 
                               'cos_face', 'arc_face', 'proxy_anchor'])
 --optimizer_type              optimizer type [default value is 'adamP'](choices=['adamP', 'sgdP', 'adam', 'sgd'])
---momentum                    momentum used for the update of moving proxies [default value is 0.5]
 --lr                          learning rate [default value is 2e-5]
 --recalls                     selected recall [default value is '1,2,4,8']
 --batch_size                  training batch size [default value is 64]
@@ -52,7 +56,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/cropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_nca_adamP_0.5_20_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_proxy_nca_adamP_20_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

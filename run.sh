@@ -38,16 +38,9 @@ for data in ${data_name[*]}; do
         else
           lr=2e-3
         fi
-        if [[ ${optimizer} =~ "P" ]]; then
-          momentums=(0.0 0.1 0.3 0.5 0.7 0.9 1.0)
-        else
-          momentums=(0.5)
-        fi
-        for momentum in ${momentums[*]}; do
-          echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --optimizer_type ${optimizer} --momentum ${momentum} --lr ${lr} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
+          echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --optimizer_type ${optimizer} --lr ${lr} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
           # shellcheck disable=SC2086
-          python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --optimizer_type ${optimizer} --momentum ${momentum} --lr ${lr} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
-        done
+          python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --optimizer_type ${optimizer} --lr ${lr} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
       done
     done
   done
