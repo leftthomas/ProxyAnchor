@@ -91,7 +91,7 @@ def recall(feature_vectors, feature_labels, rank):
 
 
 class NormalizedSoftmaxLoss(nn.Module):
-    def __init__(self, scale=20):
+    def __init__(self, scale=32):
         super(NormalizedSoftmaxLoss, self).__init__()
         self.scale = scale
 
@@ -101,7 +101,7 @@ class NormalizedSoftmaxLoss(nn.Module):
 
 
 class PositiveProxyLoss(nn.Module):
-    def __init__(self, scale=20):
+    def __init__(self, scale=32):
         super(PositiveProxyLoss, self).__init__()
         self.scale = scale
 
