@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, PositiveProxyLoss
+from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, PositiveProxyLoss, ProxyAnchorLoss
 
 # for reproducibility
 np.random.seed(1)
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
     parser.add_argument('--loss_name', default='positive_proxy', type=str,
-                        choices=['positive_proxy', 'normalized_softmax'], help='loss name')
+                        choices=['positive_proxy', 'proxy_anchor', 'normalized_softmax'], help='loss name')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -107,7 +107,12 @@ if __name__ == '__main__':
     optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
                        {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-    loss_criterion = NormalizedSoftmaxLoss() if loss_name == 'normalized_softmax' else PositiveProxyLoss()
+    if loss_name == 'positive_proxy':
+        loss_criterion = PositiveProxyLoss()
+    elif loss_name == 'proxy_anchor':
+        loss_criterion = ProxyAnchorLoss()
+    else:
+        loss_criterion = NormalizedSoftmaxLoss()
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):
