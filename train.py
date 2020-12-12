@@ -33,40 +33,41 @@ def train(net, optim):
         loss.backward()
         optim.step()
 
-        features.append(feature.detach())
-        targets.append(labels)
-        pred = torch.argmax(output, dim=-1)
-        total_loss += loss.item() * inputs.size(0)
-        total_correct += torch.sum(pred == labels).item()
-        total_num += inputs.size(0)
-        data_bar.set_description(
-            'Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'.format(epoch, num_epochs, total_loss / total_num,
-                                                                   total_correct / total_num * 100))
+        with torch.no_grad():
+            features.append(feature)
+            targets.append(labels)
+            pred = torch.argmax(output, dim=-1)
+            total_loss += loss.item() * inputs.size(0)
+            total_correct += torch.sum(pred == labels).item()
+            total_num += inputs.size(0)
+            data_bar.set_description(
+                'Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'.format(epoch, num_epochs, total_loss / total_num,
+                                                                       total_correct / total_num * 100))
 
     features = torch.cat(features, dim=0)
     targets = torch.cat(targets, dim=0)
     data_base['train_features'] = features
     data_base['train_labels'] = targets
-    data_base['train_proxies'] = F.normalize(net.fc.weight, dim=-1)
+    data_base['train_proxies'] = F.normalize(net.fc.weight.data, dim=-1)
     return total_loss / total_num, total_correct / total_num * 100
 
 
 def test(net, recall_ids):
     net.eval()
     # obtain feature vectors for all data
-    features = []
-    for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
-        feature, _ = net(inputs.cuda())
-        features.append(feature.detach())
-    features = torch.cat(features, dim=0)
-
-    # compute recall metric
-    acc_list = recall(features.cpu(), test_data_set.labels, recall_ids)
-    desc = 'Test Epoch {}/{} '.format(epoch, num_epochs)
-    for index, rank_id in enumerate(recall_ids):
-        desc += 'R@{}:{:.2f}% '.format(rank_id, acc_list[index] * 100)
-        results['test_recall@{}'.format(rank_id)].append(acc_list[index] * 100)
-    print(desc)
+    with torch.no_grad():
+        features = []
+        for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
+            feature, _ = net(inputs.cuda())
+            features.append(feature)
+        features = torch.cat(features, dim=0)
+        # compute recall metric
+        acc_list = recall(features, test_data_set.labels, recall_ids)
+        desc = 'Test Epoch {}/{} '.format(epoch, num_epochs)
+        for index, rank_id in enumerate(recall_ids):
+            desc += 'R@{}:{:.2f}% '.format(rank_id, acc_list[index] * 100)
+            results['test_recall@{}'.format(rank_id)].append(acc_list[index] * 100)
+        print(desc)
     return features
 
 

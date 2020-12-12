@@ -35,7 +35,7 @@ class ScaleIntensities(object):
 class ImageReader(Dataset):
 
     def __init__(self, data_path, data_name, data_type, backbone_type):
-        data_dict = torch.load('{}/{}/cropped_data_dicts.pth'.format(data_path, data_name))[data_type]
+        data_dict = torch.load('{}/{}/uncropped_data_dicts.pth'.format(data_path, data_name))[data_type]
         self.class_to_idx = dict(zip(sorted(data_dict), range(len(data_dict))))
         if backbone_type == 'inception':
             normalize = transforms.Normalize([104, 117, 128], [1, 1, 1])

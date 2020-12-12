@@ -33,9 +33,9 @@ for data in ${data_name[*]}; do
   for backbone in ${backbone_type[*]}; do
     for loss in ${loss_name[*]}; do
       for feature in ${feature_dim[*]}; do
-          echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
-          # shellcheck disable=SC2086
-          python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
+        echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
+        # shellcheck disable=SC2086
+        python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
       done
     done
   done

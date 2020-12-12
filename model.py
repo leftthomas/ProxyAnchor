@@ -15,7 +15,7 @@ class ProxyLinear(nn.Module):
 
     def forward(self, x):
         normalized_weight = F.normalize(self.weight, dim=-1)
-        output = x.matmul(normalized_weight.t())
+        output = x.mm(normalized_weight.t())
         return output
 
     def extra_repr(self):
