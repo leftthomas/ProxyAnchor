@@ -52,7 +52,7 @@ class ImageReader(Dataset):
         else:
             self.transform = transforms.Compose([
                 RGBToBGR() if backbone_type == 'inception' else Identity(),
-                transforms.Resize((256, 256)), transforms.CenterCrop(224),
+                transforms.Resize(256), transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 ScaleIntensities([0, 1], [0, 255]) if backbone_type == 'inception' else Identity(),
                 normalize])
