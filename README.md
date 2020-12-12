@@ -15,19 +15,31 @@ conda install pytorch torchvision cudatoolkit=11.0 -c pytorch
 ```
 
 - pretrainedmodels
+
 ```
 pip install pretrainedmodels
 ```
+
+- AdamP
+
+```
+pip install adamp
+```
+
 - SciencePlots
+
 ```
 pip install SciencePlots
 ```
 
 ## Datasets
-[CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html) and [CUB200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html) 
+
+[CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html)
+and [CUB200-2011](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html)
 are used in this repo.
 
-You should download these datasets by yourself, and extract them into `${data_path}` directory, make sure the dir names are 
+You should download these datasets by yourself, and extract them into `${data_path}` directory, make sure the dir names
+are
 `car` and `cub`. Then run `data_utils.py` to preprocess them.
 
 ## Usage

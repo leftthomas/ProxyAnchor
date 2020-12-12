@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from torch.optim import SGD
-from torch.optim.lr_scheduler import MultiStepLR
+from adamp import AdamP
+from torch.backends import cudnn
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -15,16 +16,16 @@ from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, Posit
 # for reproducibility
 np.random.seed(0)
 torch.manual_seed(0)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+cudnn.deterministic = True
+cudnn.benchmark = False
 
 
 def train(net, optim):
     net.train()
     # fix bn on backbone network
     net.backbone.apply(set_bn_eval)
-    total_loss, total_correct, total_num, features, targets, data_bar = 0.0, 0.0, 0, [], [], tqdm(train_data_loader,
-                                                                                                  dynamic_ncols=True)
+    total_loss, total_correct, total_num, features, targets = 0.0, 0.0, 0, [], []
+    data_bar = tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
         feature, output = net(inputs)
@@ -40,9 +41,9 @@ def train(net, optim):
             total_loss += loss.item() * inputs.size(0)
             total_correct += torch.sum(torch.eq(pred, labels)).item()
             total_num += inputs.size(0)
-            data_bar.set_description(
-                'Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'.format(epoch, num_epochs, total_loss / total_num,
-                                                                       total_correct / total_num * 100))
+            data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'
+                                     .format(epoch, num_epochs, total_loss / total_num,
+                                             total_correct / total_num * 100))
 
     features = torch.cat(features, dim=0)
     targets = torch.cat(targets, dim=0)
@@ -103,8 +104,9 @@ if __name__ == '__main__':
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
-    optimizer = SGD(model.parameters(), lr=2e-3)
-    lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
+    optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
+                       {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
+    lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     loss_criterion = NormalizedSoftmaxLoss() if loss_name == 'normalized_softmax' else PositiveProxyLoss()
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
