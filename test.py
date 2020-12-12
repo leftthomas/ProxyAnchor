@@ -32,7 +32,7 @@ if __name__ == '__main__':
     gallery_labels = torch.tensor(data_base['test_labels'])
     gallery_features = data_base['test_features']
 
-    sim_matrix = torch.mm(query_feature.unsqueeze(0), gallery_features.t().contiguous()).squeeze()
+    sim_matrix = query_feature.unsqueeze(0).mm(gallery_features.t()).squeeze()
     sim_matrix[query_index] = -np.inf
     idx = sim_matrix.topk(k=retrieval_num, dim=-1)[1]
 

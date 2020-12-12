@@ -38,7 +38,7 @@ def train(net, optim):
             targets.append(labels)
             pred = torch.argmax(output, dim=-1)
             total_loss += loss.item() * inputs.size(0)
-            total_correct += torch.sum(pred == labels).item()
+            total_correct += torch.sum(torch.eq(pred, labels)).item()
             total_num += inputs.size(0)
             data_bar.set_description(
                 'Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'.format(epoch, num_epochs, total_loss / total_num,

@@ -79,14 +79,14 @@ def set_bn_eval(m):
 
 def recall(feature_vectors, feature_labels, rank):
     feature_labels = torch.tensor(feature_labels, device=feature_vectors.device)
-    sim_matrix = torch.mm(feature_vectors, feature_vectors.t().contiguous())
+    sim_matrix = feature_vectors.mm(feature_vectors.t())
     sim_matrix.fill_diagonal_(-np.inf)
 
     idx = sim_matrix.topk(k=rank[-1], dim=-1, largest=True)[1]
     acc_list = []
     for r in rank:
         correct = (torch.eq(feature_labels[idx[:, 0:r]], feature_labels.unsqueeze(dim=-1))).any(dim=-1)
-        acc_list.append((torch.sum(correct.float()) / correct.size(0)).item())
+        acc_list.append((torch.sum(correct) / correct.size(0)).item())
     return acc_list
 
 
