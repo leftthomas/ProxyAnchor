@@ -1,7 +1,7 @@
 # PP
 
 A PyTorch implementation of Positive Proxy based on the
-paper [Learning proxies with only positive embeddings for fine-grained image retrieval]().
+paper [Learning with only positive embeddings for fine-grained image retrieval]().
 
 ![Network Architecture](results/structure.png)
 
@@ -11,16 +11,12 @@ paper [Learning proxies with only positive embeddings for fine-grained image ret
 - [PyTorch](https://pytorch.org)
 
 ```
-conda install pytorch torchvision torchaudio cudatoolkit=11.0 -c pytorch
+conda install pytorch torchvision cudatoolkit=11.0 -c pytorch
 ```
 
 - pretrainedmodels
 ```
 pip install pretrainedmodels
-```
-- pytorch-metric-learning
-```
-conda install pytorch-metric-learning -c metric-learning -c pytorch
 ```
 - SciencePlots
 ```
@@ -36,27 +32,27 @@ You should download these datasets by yourself, and extract them into `${data_pa
 
 ## Usage
 ### Train Model
+
 ```
-python train.py --backbone_type inception --loss_name proxy_anchor
+python train.py  --data_name cub --backbone_type inception --loss_name normalized_softmax
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
---loss_name                   loss name [default value is 'proxy_nca'](choices=['proxy_nca', 'normalized_softmax', 
-                              'cos_face', 'arc_face', 'proxy_anchor'])
---optimizer_type              optimizer type [default value is 'adamP'](choices=['adamP', 'sgdP', 'adam', 'sgd'])
---lr                          learning rate [default value is 2e-5]
---recalls                     selected recall [default value is '1,2,4,8']
+--loss_name                   loss name [default value is 'positive_proxy'](choices=['positive_proxy', 'normalized_softmax'])
+--feature_dim                 feature dim [default value is 512]
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
+--recalls                     selected recall [default value is '1,2,4,8']
 ```
 
 ### Test Model
+
 ```
 python test.py --retrieval_num 10
 optional arguments:
---query_img_name              query image name [default value is '/home/data/car/cropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_nca_adamP_20_data_base.pth']
+--query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
+--data_base                   queried database [default value is 'car_resnet50_positive_proxy_512_20_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 

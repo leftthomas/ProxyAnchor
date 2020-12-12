@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam, SGD
+from torch.optim import SGD
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader, set_bn_eval, choose_loss
+from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, PositiveProxyLoss
 
 # for reproducibility
 np.random.seed(0)
@@ -23,75 +23,45 @@ def train(net, optim):
     net.train()
     # fix bn on backbone network
     net.backbone.apply(set_bn_eval)
-    total_loss, total_num, features, targets, data_bar = 0.0, 0, [], [], tqdm(train_data_loader, dynamic_ncols=True)
+    total_loss, total_correct, total_num, features, targets, data_bar = 0.0, 0.0, 0, [], [], tqdm(train_data_loader,
+                                                                                                  dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
-        feature = net(inputs)
-        loss = loss_func(feature, labels)
+        feature, output = net(inputs)
+        loss = loss_criterion(output, labels)
         optim.zero_grad()
         loss.backward()
         optim.step()
 
-        if 'P' in optimizer_type:
-            if hasattr(loss_func, 'softmax_scale'):
-                scale = loss_func.softmax_scale
-            if hasattr(loss_func, 'temperature'):
-                scale = 1.0 / loss_func.temperature
-            if hasattr(loss_func, 'scale'):
-                scale = loss_func.scale
-            if hasattr(loss_func, 'alpha'):
-                scale = loss_func.alpha
-
-            class_count = torch.bincount(labels, minlength=len(train_data_set.class_to_idx))
-
-            # update weight
-            if hasattr(loss_func, 'proxies'):
-                proxies = loss_func.proxies.data
-                logits = torch.mm(F.normalize(feature.detach(), dim=-1),
-                                  F.normalize(proxies.detach().t().contiguous(), dim=0)) * scale
-                scores = 1.0 - F.softmax(logits, dim=-1).masked_select(
-                    F.one_hot(labels, len(train_data_set.class_to_idx)).bool())
-                updated_feature = feature.detach() * scores.unsqueeze(dim=-1) * lr * scale / class_count[
-                    labels].unsqueeze(dim=-1)
-                proxies.index_add_(0, labels, updated_feature)
-            else:
-                proxies = loss_func.W.data
-                logits = torch.mm(F.normalize(feature.detach(), dim=-1), F.normalize(proxies.detach(), dim=0)) * scale
-                scores = 1.0 - F.softmax(logits, dim=-1).masked_select(
-                    F.one_hot(labels, len(train_data_set.class_to_idx)).bool())
-                updated_feature = (feature.detach() * scores.unsqueeze(dim=-1) * lr * scale / class_count[labels]
-                                   .unsqueeze(dim=-1)).t().contiguous()
-                proxies.index_add_(-1, labels, updated_feature)
-
-        features.append(F.normalize(feature.detach(), dim=-1))
+        features.append(feature.detach())
         targets.append(labels)
+        pred = torch.argmax(output, dim=-1)
         total_loss += loss.item() * inputs.size(0)
+        total_correct += torch.sum(pred == labels).item()
         total_num += inputs.size(0)
-        data_bar.set_description('Train Epoch {}/{} - Loss:{:.4f}'.format(epoch, num_epochs, total_loss / total_num))
+        data_bar.set_description(
+            'Train Epoch {}/{} - Loss:{:.4f} - Acc:{:.2f}%'.format(epoch, num_epochs, total_loss / total_num,
+                                                                   total_correct / total_num * 100))
 
     features = torch.cat(features, dim=0)
     targets = torch.cat(targets, dim=0)
     data_base['train_features'] = features
     data_base['train_labels'] = targets
-    if hasattr(loss_func, 'proxies'):
-        data_base['train_proxies'] = F.normalize(loss_func.proxies.data, dim=-1)
-    else:
-        data_base['train_proxies'] = F.normalize(loss_func.W.data.t().contiguous(), dim=-1)
-    return total_loss / total_num
+    data_base['train_proxies'] = F.normalize(net.fc.weight, dim=-1)
+    return total_loss / total_num, total_correct / total_num * 100
 
 
 def test(net, recall_ids):
     net.eval()
-    with torch.no_grad():
-        # obtain feature vectors for all data
-        features = []
-        for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
-            feature = net(inputs.cuda())
-            features.append(F.normalize(feature, dim=-1))
-        features = torch.cat(features, dim=0)
+    # obtain feature vectors for all data
+    features = []
+    for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
+        feature, _ = net(inputs.cuda())
+        features.append(feature.detach())
+    features = torch.cat(features, dim=0)
 
-        # compute recall metric
-        acc_list = recall(features, test_data_set.labels, recall_ids)
+    # compute recall metric
+    acc_list = recall(features.cpu(), test_data_set.labels, recall_ids)
     desc = 'Test Epoch {}/{} '.format(epoch, num_epochs)
     for index, rank_id in enumerate(recall_ids):
         desc += 'R@{}:{:.2f}% '.format(rank_id, acc_list[index] * 100)
@@ -106,24 +76,21 @@ if __name__ == '__main__':
     parser.add_argument('--data_name', default='car', type=str, choices=['car', 'cub'], help='dataset name')
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
-    parser.add_argument('--loss_name', default='proxy_nca', type=str,
-                        choices=['proxy_nca', 'normalized_softmax', 'cos_face', 'arc_face', 'proxy_anchor'],
-                        help='loss name')
-    parser.add_argument('--optimizer_type', default='adamP', type=str, choices=['adamP', 'sgdP', 'adam', 'sgd'],
-                        help='optimizer type')
-    parser.add_argument('--lr', default=2e-5, type=float, help='learning rate')
-    parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
+    parser.add_argument('--loss_name', default='positive_proxy', type=str,
+                        choices=['positive_proxy', 'normalized_softmax'], help='loss name')
+    parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
+    parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
 
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, loss_name = opt.data_path, opt.data_name, opt.backbone_type, opt.loss_name
-    optimizer_type, lr, batch_size, num_epochs = opt.optimizer_type, opt.lr, opt.batch_size, opt.num_epochs
+    feature_dim, batch_size, num_epochs = opt.feature_dim, opt.batch_size, opt.num_epochs
     recalls = [int(k) for k in opt.recalls.split(',')]
-    save_name_pre = '{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, optimizer_type)
+    save_name_pre = '{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, feature_dim)
 
-    results = {'train_loss': []}
+    results = {'train_loss': [], 'train_accuracy': []}
     for recall_id in recalls:
         results['test_recall@{}'.format(recall_id)] = []
 
@@ -134,29 +101,23 @@ if __name__ == '__main__':
     test_data_loader = DataLoader(test_data_set, batch_size, shuffle=False, num_workers=8)
 
     # model setup, optimizer config and loss definition
-    model = Model(backbone_type).cuda()
-    loss_func = choose_loss(loss_name, len(train_data_set.class_to_idx), 512).cuda()
-    if 'P' in optimizer_type:
-        for param in loss_func.parameters():
-            # not update by gradient
-            param.requires_grad = False
-    if 'adam' in optimizer_type:
-        optimizer = Adam([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
-    else:
-        optimizer = SGD([{'params': model.parameters()}, {'params': loss_func.parameters()}], lr=lr)
+    model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
+    optimizer = SGD(model.parameters(), lr=2e-3)
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(num_epochs * 0.5), int(num_epochs * 0.8)], gamma=0.1)
+    loss_criterion = NormalizedSoftmaxLoss() if loss_name == 'normalized_softmax' else PositiveProxyLoss()
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):
-        train_loss = train(model, optimizer)
+        train_loss, train_accuracy = train(model, optimizer)
         results['train_loss'].append(train_loss)
+        results['train_accuracy'].append(train_accuracy)
         test_features = test(model, recalls)
         lr_scheduler.step()
 
-        # save statistics
-        data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/{}_statistics.csv'.format(save_name_pre), index_label='epoch')
         # save database and model
         data_base['test_features'] = test_features
         torch.save(model.state_dict(), 'results/{}_{}_model.pth'.format(save_name_pre, epoch))
         torch.save(data_base, 'results/{}_{}_data_base.pth'.format(save_name_pre, epoch))
+        # save statistics
+        data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
+        data_frame.to_csv('results/{}_statistics.csv'.format(save_name_pre), index_label='epoch')

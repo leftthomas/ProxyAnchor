@@ -1,7 +1,8 @@
 import numpy as np
-import pytorch_metric_learning.losses as losses
 import torch
+import torch.nn.functional as F
 from PIL import Image
+from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -89,16 +90,21 @@ def recall(feature_vectors, feature_labels, rank):
     return acc_list
 
 
-def choose_loss(loss_name, num_classes, embedding_size):
-    if loss_name == 'proxy_nca':
-        return losses.ProxyNCALoss(num_classes, embedding_size)
-    elif loss_name == 'normalized_softmax':
-        return losses.NormalizedSoftmaxLoss(num_classes, embedding_size)
-    elif loss_name == 'cos_face':
-        return losses.CosFaceLoss(num_classes, embedding_size)
-    elif loss_name == 'arc_face':
-        return losses.ArcFaceLoss(num_classes, embedding_size)
-    elif loss_name == 'proxy_anchor':
-        return losses.ProxyAnchorLoss(num_classes, embedding_size)
-    else:
-        raise NotImplemented('Not support {} loss'.format(loss_name))
+class NormalizedSoftmaxLoss(nn.Module):
+    def __init__(self, scale=20):
+        super(NormalizedSoftmaxLoss, self).__init__()
+        self.scale = scale
+
+    def forward(self, output, label):
+        loss = F.cross_entropy(output * self.scale, label)
+        return loss
+
+
+class PositiveProxyLoss(nn.Module):
+    def __init__(self, scale=20):
+        super(PositiveProxyLoss, self).__init__()
+        self.scale = scale
+
+    def forward(self, output, label):
+        loss = F.cross_entropy(output * self.scale, label)
+        return loss
