@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, PositiveProxyLoss, ProxyAnchorLoss
+from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, ProxyAnchorLoss
 
 # for reproducibility
 np.random.seed(1)
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     parser.add_argument('--data_name', default='car', type=str, choices=['car', 'cub'], help='dataset name')
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
-    parser.add_argument('--loss_name', default='positive_proxy', type=str,
-                        choices=['positive_proxy', 'proxy_anchor', 'normalized_softmax'], help='loss name')
+    parser.add_argument('--loss_name', default='proxy_anchor', type=str,
+                        choices=['proxy_anchor', 'normalized_softmax'], help='loss name')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -107,9 +107,7 @@ if __name__ == '__main__':
     optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
                        {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-    if loss_name == 'positive_proxy':
-        loss_criterion = PositiveProxyLoss()
-    elif loss_name == 'proxy_anchor':
+    if loss_name == 'proxy_anchor':
         loss_criterion = ProxyAnchorLoss()
     else:
         loss_criterion = NormalizedSoftmaxLoss()

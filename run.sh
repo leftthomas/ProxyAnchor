@@ -26,7 +26,7 @@ fi
 
 data_name=("car" "cub")
 backbone_type=("resnet50" "inception" "googlenet")
-loss_name=("positive_proxy" "proxy_anchor" "normalized_softmax")
+loss_name=("proxy_anchor" "normalized_softmax")
 feature_dim=(512 1024)
 
 for data in ${data_name[*]}; do
