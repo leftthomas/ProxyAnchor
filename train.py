@@ -83,13 +83,14 @@ if __name__ == '__main__':
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
+    parser.add_argument('--warm_up', default=2, type=int, help='warm up number')
     parser.add_argument('--recalls', default='1,2,4,8', type=str, help='selected recall')
 
     opt = parser.parse_args()
     # args parse
     data_path, data_name, backbone_type, loss_name = opt.data_path, opt.data_name, opt.backbone_type, opt.loss_name
     feature_dim, batch_size, num_epochs = opt.feature_dim, opt.batch_size, opt.num_epochs
-    recalls = [int(k) for k in opt.recalls.split(',')]
+    warm_up, recalls = opt.warm_up, [int(k) for k in opt.recalls.split(',')]
     save_name_pre = '{}_{}_{}_{}'.format(data_name, backbone_type, loss_name, feature_dim)
 
     results = {'train_loss': [], 'train_accuracy': []}
@@ -114,6 +115,10 @@ if __name__ == '__main__':
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):
+        # warmup, not update the parameters of backbone
+        for param in model.backbone.parameters():
+            param.requires_grad = False if epoch <= warm_up else True
+
         train_loss, train_accuracy = train(model, optimizer)
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
