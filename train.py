@@ -31,6 +31,22 @@ def train(net, optim):
         feature, output = net(inputs)
         loss = loss_criterion(output, labels)
         optim.zero_grad()
+
+        # handle the grad passed to proxies
+        def hook_fn(grad):
+            with torch.no_grad():
+                if loss_name == 'proxy_anchor*':
+                    return grad
+                elif loss_name == 'normalized_softmax*':
+                    weight = (F.softmax(output * loss_criterion.scale, dim=-1) - 1) * loss_criterion.scale
+                    pos_label = F.one_hot(labels, num_classes=output.size(-1))
+                    pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))
+                    grad = pos_weight.t().mm(feature)
+                    return grad
+                else:
+                    return grad
+
+        net.fc.weight.register_hook(hook_fn)
         loss.backward()
         optim.step()
 
@@ -78,8 +94,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_name', default='car', type=str, choices=['car', 'cub'], help='dataset name')
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
-    parser.add_argument('--loss_name', default='proxy_anchor', type=str,
-                        choices=['proxy_anchor', 'normalized_softmax'], help='loss name')
+    parser.add_argument('--loss_name', default='proxy_anchor*', type=str,
+                        choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_anchor', 'normalized_softmax'],
+                        help='loss name')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -108,7 +125,7 @@ if __name__ == '__main__':
     optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
                        {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-    if loss_name == 'proxy_anchor':
+    if 'proxy_anchor' in loss_name:
         loss_criterion = ProxyAnchorLoss()
     else:
         loss_criterion = NormalizedSoftmaxLoss()

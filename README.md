@@ -48,7 +48,7 @@ optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
---loss_name                   loss name [default value is 'proxy_anchor'](choices=['proxy_anchor', 'normalized_softmax'])
+--loss_name                   loss name [default value is 'proxy_anchor*'](choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_anchor', 'normalized_softmax'])
 --feature_dim                 feature dim [default value is 512]
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
@@ -62,7 +62,7 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_anchor_512_20_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_proxy_anchor*_512_20_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
