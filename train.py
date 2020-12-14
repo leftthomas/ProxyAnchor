@@ -36,12 +36,20 @@ def train(net, optim):
         def hook_fn(grad):
             with torch.no_grad():
                 if loss_name == 'proxy_anchor*':
+                    weight = torch.exp(- loss_criterion.scale * (output - loss_criterion.margin))
+                    pos_label = F.one_hot(labels, num_classes=output.size(-1))
+                    pos_num = torch.sum(torch.ne(pos_label.sum(dim=0), 0))
+                    # pos_weight = (torch.where(torch.eq(pos_label, 1), pos_output, torch.zeros_like(pos_output))).sum(
+                    #     dim=0)
                     return grad
                 elif loss_name == 'normalized_softmax*':
                     weight = (F.softmax(output * loss_criterion.scale, dim=-1) - 1) * loss_criterion.scale
                     pos_label = F.one_hot(labels, num_classes=output.size(-1))
                     pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))
                     grad = pos_weight.t().mm(feature)
+                    count = pos_label.sum(dim=0)
+                    count = torch.where(torch.ne(count, 0), count, torch.ones_like(count))
+                    grad = grad / count.unsqueeze(dim=-1)
                     return grad
                 else:
                     return grad
