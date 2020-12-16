@@ -28,7 +28,7 @@ def train(net, optim):
     data_bar = tqdm(train_data_loader, dynamic_ncols=True)
     for inputs, labels in data_bar:
         inputs, labels = inputs.cuda(), labels.cuda()
-        feature, output = net(inputs)
+        feature, normalized_weight, output = net(inputs)
         loss = loss_criterion(output, labels)
         optim.zero_grad()
 
@@ -39,8 +39,13 @@ def train(net, optim):
                     weight = torch.exp(- loss_criterion.scale * (output - loss_criterion.margin))
                     pos_label = F.one_hot(labels, num_classes=output.size(-1))
                     pos_num = torch.sum(torch.ne(pos_label.sum(dim=0), 0))
-                    # pos_weight = (torch.where(torch.eq(pos_label, 1), pos_output, torch.zeros_like(pos_output))).sum(
-                    #     dim=0)
+                    pos_weight = (torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))).sum(dim=0)
+                    weight = - loss_criterion.scale * weight / (1 + pos_weight).unsqueeze(dim=0) / pos_num
+                    pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))
+                    grad = pos_weight.t().mm(feature)
+                    count = pos_label.sum(dim=0)
+                    count = torch.where(torch.ne(count, 0), count, torch.ones_like(count))
+                    grad = grad / count.unsqueeze(dim=-1)
                     return grad
                 elif loss_name == 'normalized_softmax*':
                     weight = (F.softmax(output * loss_criterion.scale, dim=-1) - 1) * loss_criterion.scale
@@ -54,7 +59,7 @@ def train(net, optim):
                 else:
                     return grad
 
-        net.fc.weight.register_hook(hook_fn)
+        normalized_weight.register_hook(hook_fn)
         loss.backward()
         optim.step()
 
@@ -83,7 +88,7 @@ def test(net, recall_ids):
     with torch.no_grad():
         features = []
         for inputs, labels in tqdm(test_data_loader, desc='processing test data', dynamic_ncols=True):
-            feature, _ = net(inputs.cuda())
+            feature, _, __ = net(inputs.cuda())
             features.append(feature)
         features = torch.cat(features, dim=0)
         # compute recall metric
@@ -131,7 +136,7 @@ if __name__ == '__main__':
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
     optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
-                       {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
+                       {'params': model.fc.parameters(), 'lr': 1e-4}], lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     if 'proxy_anchor' in loss_name:
         loss_criterion = ProxyAnchorLoss()
