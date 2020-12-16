@@ -52,7 +52,6 @@ optional arguments:
 --feature_dim                 feature dim [default value is 512]
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
---warm_up                     warm up number [default value is 2]
 --recalls                     selected recall [default value is '1,2,4,8']
 ```
 
