@@ -90,6 +90,20 @@ def recall(feature_vectors, feature_labels, rank):
     return acc_list
 
 
+class ProxyNCALoss(nn.Module):
+    def __init__(self):
+        super(ProxyNCALoss, self).__init__()
+
+    def forward(self, output, label):
+        pos_label = F.one_hot(label, num_classes=output.size(-1))
+        neg_label = 1 - pos_label
+        output = torch.exp(output)
+        pos_output = (torch.where(torch.eq(pos_label, 1), output, torch.zeros_like(output))).sum(dim=-1)
+        neg_output = (torch.where(torch.eq(neg_label, 1), output, torch.zeros_like(output))).sum(dim=-1)
+        loss = (-torch.log(pos_output / neg_output)).mean()
+        return loss
+
+
 class NormalizedSoftmaxLoss(nn.Module):
     def __init__(self, scale=32):
         super(NormalizedSoftmaxLoss, self).__init__()

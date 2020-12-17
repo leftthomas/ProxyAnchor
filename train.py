@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import Model
-from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, ProxyAnchorLoss
+from utils import recall, ImageReader, set_bn_eval, NormalizedSoftmaxLoss, ProxyAnchorLoss, ProxyNCALoss
 
 # for reproducibility
 np.random.seed(1)
@@ -35,29 +35,24 @@ def train(net, optim):
         # handle the grad passed to proxies
         def hook_fn(grad):
             with torch.no_grad():
+                if '*' in loss_name:
+                    pos_label = F.one_hot(labels, num_classes=output.size(-1))
                 if loss_name == 'proxy_anchor*':
                     weight = torch.exp(- loss_criterion.scale * (output - loss_criterion.margin))
-                    pos_label = F.one_hot(labels, num_classes=output.size(-1))
                     pos_num = torch.sum(torch.ne(pos_label.sum(dim=0), 0))
                     pos_weight = (torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))).sum(dim=0)
                     weight = - loss_criterion.scale * weight / (1 + pos_weight).unsqueeze(dim=0) / pos_num
-                    pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))
-                    grad = pos_weight.t().mm(feature)
-                    count = pos_label.sum(dim=0)
-                    count = torch.where(torch.ne(count, 0), count, torch.ones_like(count))
-                    grad = grad / count.unsqueeze(dim=-1)
-                    return grad
-                elif loss_name == 'normalized_softmax*':
+                if loss_name == 'normalized_softmax*':
                     weight = (F.softmax(output * loss_criterion.scale, dim=-1) - 1) * loss_criterion.scale
-                    pos_label = F.one_hot(labels, num_classes=output.size(-1))
-                    pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(weight))
+                if loss_name == 'proxy_nca*':
+                    weight = -torch.ones_like(output)
+                if '*' in loss_name:
+                    pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(output))
                     grad = pos_weight.t().mm(feature)
                     count = pos_label.sum(dim=0)
                     count = torch.where(torch.ne(count, 0), count, torch.ones_like(count))
                     grad = grad / count.unsqueeze(dim=-1)
-                    return grad
-                else:
-                    return grad
+                return grad
 
         normalized_weight.register_hook(hook_fn)
         loss.backward()
@@ -108,8 +103,8 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_type', default='resnet50', type=str, choices=['resnet50', 'inception', 'googlenet'],
                         help='backbone network type')
     parser.add_argument('--loss_name', default='proxy_anchor*', type=str,
-                        choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_anchor', 'normalized_softmax'],
-                        help='loss name')
+                        choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_nca*', 'proxy_anchor',
+                                 'normalized_softmax', 'proxy_nca'], help='loss name')
     parser.add_argument('--feature_dim', default=512, type=int, help='feature dim')
     parser.add_argument('--batch_size', default=64, type=int, help='training batch size')
     parser.add_argument('--num_epochs', default=20, type=int, help='training epoch number')
@@ -138,8 +133,10 @@ if __name__ == '__main__':
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     if 'proxy_anchor' in loss_name:
         loss_criterion = ProxyAnchorLoss()
-    else:
+    elif 'normalized_softmax' in loss_name:
         loss_criterion = NormalizedSoftmaxLoss()
+    else:
+        loss_criterion = ProxyNCALoss()
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
     for epoch in range(1, num_epochs + 1):

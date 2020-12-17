@@ -48,7 +48,7 @@ optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
---loss_name                   loss name [default value is 'proxy_anchor*'](choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_anchor', 'normalized_softmax'])
+--loss_name                   loss name [default value is 'proxy_anchor*'](choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_nca*', 'proxy_anchor', 'normalized_softmax', 'proxy_nca'])
 --feature_dim                 feature dim [default value is 512]
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
@@ -67,8 +67,8 @@ optional arguments:
 
 ## Benchmarks
 
-The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-2` for the parameters of `ProxyLinear`
-and `1e-4` for other parameters, every `5 steps` the `lr` is reduced by `2`.
+The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-2`, every `5 steps` the `lr` is reduced
+by `2`.
 `scale` is `32` and `margin` is `0.1`, other hyper-parameters are the default values.
 
 ### CARS196
