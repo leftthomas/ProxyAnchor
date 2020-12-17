@@ -93,7 +93,8 @@ def test(net, recall_ids):
             desc += 'R@{}:{:.2f}% '.format(rank_id, acc_list[index] * 100)
             results['test_recall@{}'.format(rank_id)].append(acc_list[index] * 100)
         print(desc)
-    return features
+        data_base['test_features'] = features
+    return acc_list[0]
 
 
 if __name__ == '__main__':
@@ -139,17 +140,19 @@ if __name__ == '__main__':
         loss_criterion = ProxyNCALoss()
 
     data_base = {'test_images': test_data_set.images, 'test_labels': test_data_set.labels}
+    best_recall = 0.0
     for epoch in range(1, num_epochs + 1):
         train_loss, train_accuracy = train(model, optimizer)
         results['train_loss'].append(train_loss)
         results['train_accuracy'].append(train_accuracy)
-        test_features = test(model, recalls)
+        rank = test(model, recalls)
         lr_scheduler.step()
-
-        # save database and model
-        data_base['test_features'] = test_features
-        torch.save(model.state_dict(), 'results/{}_{}_model.pth'.format(save_name_pre, epoch))
-        torch.save(data_base, 'results/{}_{}_data_base.pth'.format(save_name_pre, epoch))
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
         data_frame.to_csv('results/{}_statistics.csv'.format(save_name_pre), index_label='epoch')
+
+        if rank > best_recall:
+            best_recall = rank
+            # save database and model
+            torch.save(model.state_dict(), 'results/{}_model.pth'.format(save_name_pre))
+            torch.save(data_base, 'results/{}_data_base.pth'.format(save_name_pre))
