@@ -132,7 +132,7 @@ if __name__ == '__main__':
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
     optimizer = AdamP([{'params': model.backbone.parameters()}, {'params': model.refactor.parameters()},
-                       {'params': model.fc.parameters(), 'lr': 1e-2}], lr=1e-4)
+                       {'params': model.fc.parameters(), 'lr': 1e-3}], lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     if 'proxy_anchor' in loss_name:
         loss_criterion = ProxyAnchorLoss()

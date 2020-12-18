@@ -42,9 +42,9 @@ for data in ${data_name[*]}; do
       else
         feature=512
       fi
-        echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}"
-        # shellcheck disable=SC2086
-        python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}
+      echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}"
+      # shellcheck disable=SC2086
+      python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}
     done
   done
 done
