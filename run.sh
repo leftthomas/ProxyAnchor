@@ -19,7 +19,13 @@ else
 fi
 
 if [ -n "$4" ]; then
-  recall="$4"
+  warm=$4
+else
+  warm=2
+fi
+
+if [ -n "$5" ]; then
+  recall="$5"
 else
   recall="1,2,4,8"
 fi
@@ -36,9 +42,9 @@ for data in ${data_name[*]}; do
       else
         feature=512
       fi
-      echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
-      # shellcheck disable=SC2086
-      python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
+        echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}"
+        # shellcheck disable=SC2086
+        python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --warm_up ${warm} --recalls ${recall}
     done
   done
 done

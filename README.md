@@ -68,9 +68,9 @@ optional arguments:
 
 ## Benchmarks
 
-The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-4`, every `5 steps` the `lr` is reduced
-by `2`.
-`scale` is `32` and `margin` is `0.1`, other hyper-parameters are the default values.
+The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-2` for the parameters of `ProxyLinear`
+and `1e-4` for other parameters, every `5 steps` the `lr` is reduced by `2`. `scale` is `32` and `margin` is `0.1`,
+other hyper-parameters are the default values.
 
 ### CARS196
 
