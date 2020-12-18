@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from adamp import AdamP
 from torch.backends import cudnn
-from torch.optim import AdamW
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     # model setup, optimizer config and loss definition
     model = Model(backbone_type, feature_dim, len(train_data_set.class_to_idx)).cuda()
-    optimizer = AdamW(model.parameters(), lr=1e-4)
+    optimizer = AdamP(model.parameters(), lr=1e-4)
     lr_scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
     if 'proxy_anchor' in loss_name:
         loss_criterion = ProxyAnchorLoss()
