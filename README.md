@@ -43,7 +43,7 @@ make sure the dir names are `car` and `cub`. Then run `data_utils.py` to preproc
 ### Train Model
 
 ```
-python train.py  --data_name cub --backbone_type inception --loss_name normalized_softmax
+python train.py  --data_name cub --backbone_type inception --loss_name proxy_nca --feature_dim 64
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
@@ -68,7 +68,7 @@ optional arguments:
 
 ## Benchmarks
 
-The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-2`, every `5 steps` the `lr` is reduced
+The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-4`, every `5 steps` the `lr` is reduced
 by `2`.
 `scale` is `32` and `margin` is `0.1`, other hyper-parameters are the default values.
 

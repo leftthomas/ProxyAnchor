@@ -27,16 +27,18 @@ fi
 data_name=("car" "cub")
 backbone_type=("resnet50" "inception" "googlenet")
 loss_name=("proxy_anchor*" "normalized_softmax*" "proxy_nca*" "proxy_anchor" "normalized_softmax" "proxy_nca")
-feature_dim=(64 128 512 1024)
 
 for data in ${data_name[*]}; do
   for backbone in ${backbone_type[*]}; do
     for loss in ${loss_name[*]}; do
-      for feature in ${feature_dim[*]}; do
-        echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
-        # shellcheck disable=SC2086
-        python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
-      done
+      if [[ ${loss} =~ "proxy_nca" ]]; then
+        feature=64
+      else
+        feature=512
+      fi
+      echo "python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}"
+      # shellcheck disable=SC2086
+      python train.py --data_path ${path} --data_name ${data} --backbone_type ${backbone} --loss_name ${loss} --feature_dim ${feature} --batch_size ${size} --num_epochs ${epochs} --recalls ${recall}
     done
   done
 done
