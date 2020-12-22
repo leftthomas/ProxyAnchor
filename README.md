@@ -1,9 +1,7 @@
-# PP
+# ProxyAnchor
 
-A PyTorch implementation of Positive Proxy Loss based on the
-paper [Positive Proxy Loss for fine-grained image retrieval]().
-
-![Network Architecture](results/structure.png)
+A PyTorch implementation of Proxy Anchor Loss based on the
+paper [Proxy Anchor Loss for Deep Metric Learning](https://arxiv.org/abs/2003.13911).
 
 ## Requirements
 
@@ -26,12 +24,6 @@ pip install pretrainedmodels
 pip install adamp
 ```
 
-- SciencePlots
-
-```
-pip install SciencePlots
-```
-
 ## Datasets
 
 [CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html)
@@ -43,12 +35,11 @@ make sure the dir names are `car` and `cub`. Then run `data_utils.py` to preproc
 ### Train Model
 
 ```
-python train.py  --data_name cub --backbone_type inception --loss_name proxy_nca --feature_dim 64
+python train.py  --data_name cub --backbone_type inception --feature_dim 256
 optional arguments:
 --data_path                   datasets path [default value is '/home/data']
 --data_name                   dataset name [default value is 'car'](choices=['car', 'cub'])
 --backbone_type               backbone network type [default value is 'resnet50'](choices=['resnet50', 'inception', 'googlenet'])
---loss_name                   loss name [default value is 'proxy_anchor*'](choices=['proxy_anchor*', 'normalized_softmax*', 'proxy_nca*', 'proxy_anchor', 'normalized_softmax', 'proxy_nca'])
 --feature_dim                 feature dim [default value is 512]
 --batch_size                  training batch size [default value is 64]
 --num_epochs                  training epoch number [default value is 20]
@@ -62,15 +53,16 @@ optional arguments:
 python test.py --retrieval_num 10
 optional arguments:
 --query_img_name              query image name [default value is '/home/data/car/uncropped/008055.jpg']
---data_base                   queried database [default value is 'car_resnet50_proxy_anchor*_512_data_base.pth']
+--data_base                   queried database [default value is 'car_resnet50_512_data_base.pth']
 --retrieval_num               retrieval number [default value is 8]
 ```
 
 ## Benchmarks
 
-The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `lr` is `1e-2` for the parameters of `ProxyLinear`
-and `1e-4` for other parameters, every `5 steps` the `lr` is reduced by `2`. `scale` is `32` and `margin` is `0.1`,
-other hyper-parameters are the default values.
+The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `AdamP` is used to optimize the model, `lr` is `1e-2`
+for the parameters of `ProxyLinear` and `1e-4` for other parameters, every `5 steps` the `lr` is reduced by `2`.
+`scale` is `32` and `margin` is `0.1`, a `layer_norm` op is injected to centering the embedding, other hyper-parameters
+are the default values.
 
 ### CARS196
 
