@@ -45,7 +45,7 @@ if __name__ == '__main__':
             .resize((224, 224), resample=Image.BILINEAR)
         draw = ImageDraw.Draw(retrieval_image)
         retrieval_label = gallery_labels[index.item()]
-        retrieval_status = (torch.equal(retrieval_label, query_label)).item()
+        retrieval_status = torch.equal(retrieval_label, query_label)
         retrieval_sim = sim_matrix[index.item()].item()
         if retrieval_status:
             draw.rectangle((0, 0, 223, 223), outline='green', width=8)
