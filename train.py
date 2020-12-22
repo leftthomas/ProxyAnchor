@@ -48,13 +48,10 @@ def train(net, optim):
                     weight = -torch.ones_like(output)
                 if '*' in loss_name:
                     pos_weight = torch.where(torch.eq(pos_label, 1), weight, torch.zeros_like(output))
-                    grad = pos_weight.t().mm(feature)
-                    count = pos_label.sum(dim=0)
-                    count = torch.where(torch.ne(count, 0), count, torch.ones_like(count))
-                    grad = grad / count.unsqueeze(dim=-1)
+                    grad = pos_weight.mm(normalized_weight)
                 return grad
 
-        normalized_weight.register_hook(hook_fn)
+        feature.register_hook(hook_fn)
         loss.backward()
         optim.step()
 
