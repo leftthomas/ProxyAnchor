@@ -1,6 +1,6 @@
 # ProxyAnchor
 
-A PyTorch implementation of Proxy Anchor Loss based on the
+A PyTorch implementation of Proxy Anchor Loss based on CVPR 2020
 paper [Proxy Anchor Loss for Deep Metric Learning](https://arxiv.org/abs/2003.13911).
 
 ## Requirements
