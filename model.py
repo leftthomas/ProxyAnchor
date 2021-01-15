@@ -22,6 +22,16 @@ class ProxyLinear(nn.Module):
         return 'num_proxy={}, in_features={}'.format(self.num_proxy, self.in_features)
 
 
+class AvgMaxPool(nn.Module):
+    def __init__(self):
+        super(AvgMaxPool, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+
+    def forward(self, x):
+        return self.avg_pool(x) + self.max_pool(x)
+
+
 class Model(nn.Module):
     def __init__(self, backbone_type, feature_dim, num_classes):
         super().__init__()
@@ -31,10 +41,10 @@ class Model(nn.Module):
         backbone, middle_dim = backbones[backbone_type]
         backbone = backbone(pretrained='imagenet' if backbone_type == 'inception' else True)
         if backbone_type == 'inception':
-            backbone.global_pool = nn.AdaptiveMaxPool2d(1)
+            backbone.global_pool = AvgMaxPool()
             backbone.last_linear = nn.Identity()
         else:
-            backbone.avgpool = nn.AdaptiveMaxPool2d(1)
+            backbone.avgpool = AvgMaxPool()
             backbone.fc = nn.Identity()
         self.backbone = backbone
 
@@ -44,7 +54,6 @@ class Model(nn.Module):
 
     def forward(self, x):
         features = self.backbone(x)
-        features = F.layer_norm(features, features.size()[1:])
         features = F.normalize(self.refactor(features), dim=-1)
         classes = self.fc(features)
         return features, classes
