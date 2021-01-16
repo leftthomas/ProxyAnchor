@@ -18,12 +18,6 @@ conda install pytorch torchvision cudatoolkit=11.0 -c pytorch
 pip install pretrainedmodels
 ```
 
-- AdamP
-
-```
-pip install adamp
-```
-
 ## Datasets
 
 [CARS196](http://ai.stanford.edu/~jkrause/cars/car_dataset.html)
@@ -59,10 +53,9 @@ optional arguments:
 
 ## Benchmarks
 
-The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `AdamP` is used to optimize the model, `lr` is `1e-2`
+The models are trained on one NVIDIA GeForce GTX 1070 (8G) GPU. `AdamW` is used to optimize the model, `lr` is `1e-2`
 for the parameters of `proxies` and `1e-4` for other parameters, every `5 steps` the `lr` is reduced by `2`.
-`scale` is `32` and `margin` is `0.1`, a `layer_norm` op is injected to centering the embedding, other hyper-parameters
-are the default values.
+`weight decay` is used, `scale` is `32` and `margin` is `0.1`, other hyper-parameters are the default values.
 
 ### CARS196
 
@@ -80,26 +73,26 @@ are the default values.
   <tbody>
     <tr>
       <td align="center">ResNet50</td>
-      <td align="center">88.5%</td>
-      <td align="center">93.1%</td>
-      <td align="center">95.8%</td>
-      <td align="center">97.7%</td>
+      <td align="center">87.2%</td>
+      <td align="center">92.4%</td>
+      <td align="center">95.5%</td>
+      <td align="center">97.4%</td>
       <td align="center"><a href="https://pan.baidu.com/s/1ig6gwBBSm0EPzesL5KytYQ">5bww</a></td>
     </tr>
     <tr>
       <td align="center">Inception</td>
-      <td align="center">85.5%</td>
-      <td align="center">91.5%</td>
-      <td align="center">95.0%</td>
-      <td align="center">97.2%</td>
+      <td align="center">85.1%</td>
+      <td align="center">91.1%</td>
+      <td align="center">94.5%</td>
+      <td align="center">96.9%</td>
       <td align="center"><a href="https://pan.baidu.com/s/1-wVIlNjiqiUUD1kRh8Efww">r6e7</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
-      <td align="center">78.1%</td>
-      <td align="center">86.4%</td>
-      <td align="center">91.5%</td>
-      <td align="center">94.9%</td>
+      <td align="center">78.2%</td>
+      <td align="center">85.5%</td>
+      <td align="center">91.1%</td>
+      <td align="center">94.5%</td>
       <td align="center"><a href="https://pan.baidu.com/s/1hMjWx9MG_40oHz6uBqe6OQ">espu</a></td>
     </tr>
   </tbody>
@@ -121,26 +114,26 @@ are the default values.
   <tbody>
     <tr>
       <td align="center">ResNet50</td>
-      <td align="center">67.7%</td>
-      <td align="center">78.4%</td>
-      <td align="center">85.8%</td>
-      <td align="center">91.0%</td>
+      <td align="center">67.0%</td>
+      <td align="center">77.3%</td>
+      <td align="center">85.1%</td>
+      <td align="center">90.8%</td>
       <td align="center"><a href="https://pan.baidu.com/s/128SGDlxV1Cd8gPJEi7Z4gA">73h5</a></td>
     </tr>
     <tr>
       <td align="center">Inception</td>
-      <td align="center">68.3%</td>
-      <td align="center">78.7%</td>
-      <td align="center">85.9%</td>
-      <td align="center">90.8%</td>
+      <td align="center">67.6%</td>
+      <td align="center">78.2%</td>
+      <td align="center">86.3%</td>
+      <td align="center">91.4%</td>
       <td align="center"><a href="https://pan.baidu.com/s/1i97a8vr3Le_9Bk-L0cTJug">u5b9</a></td>
     </tr>
     <tr>
       <td align="center">GoogLeNet</td>
-      <td align="center">62.4%</td>
-      <td align="center">73.0%</td>
-      <td align="center">82.7%</td>
-      <td align="center">89.3%</td>
+      <td align="center">62.8%</td>
+      <td align="center">73.9%</td>
+      <td align="center">82.4%</td>
+      <td align="center">89.4%</td>
       <td align="center"><a href="https://pan.baidu.com/s/1R6qnPfyBEKysCzWTdnO_6Q">anbq</a></td>
     </tr>
   </tbody>
